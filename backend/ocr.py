@@ -11,10 +11,27 @@ from PIL import Image
 # TESSERACT CONFIGURATION
 # --------------------------------------------------
 
-TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+import os
+import cv2
+import numpy as np
+import pytesseract
+import fitz
+from PIL import Image
 
-if os.path.exists(TESSERACT_PATH):
-    pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+# --------------------------------------------------
+# TESSERACT CONFIGURATION
+# --------------------------------------------------
+
+if os.name == "nt":
+    # Windows
+    TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+    if os.path.exists(TESSERACT_PATH):
+        pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+
+else:
+    # Linux / Render
+    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
 
 # --------------------------------------------------
