@@ -27,7 +27,9 @@
             min-height: 100vh;
         }
 
-        /* NAVBAR */
+        /* ======================================================
+           NAVBAR
+        ====================================================== */
 
         .navbar {
             height: 70px;
@@ -48,6 +50,11 @@
             color: #159447;
         }
 
+        .navbar nav {
+            display: flex;
+            align-items: center;
+        }
+
         .navbar a {
             text-decoration: none;
             color: #31574e;
@@ -59,7 +66,9 @@
             color: #159447;
         }
 
-        /* HEADER */
+        /* ======================================================
+           HEADER
+        ====================================================== */
 
         .page-header {
             text-align: center;
@@ -84,16 +93,20 @@
             font-size: 17px;
         }
 
-        /* MAIN */
+        /* ======================================================
+           MAIN
+        ====================================================== */
 
         .main {
             width: 90%;
-            max-width: 900px;
+            max-width: 1000px;
             margin: auto;
             padding-bottom: 80px;
         }
 
-        /* UPLOAD BOX */
+        /* ======================================================
+           UPLOAD BOX
+        ====================================================== */
 
         .upload-box {
             background: white;
@@ -129,6 +142,7 @@
         .upload-box p {
             color: #687d76;
             margin-bottom: 12px;
+            text-align: center;
         }
 
         .supported {
@@ -137,47 +151,30 @@
             margin-bottom: 25px !important;
         }
 
-        /*
-        ======================================================
-        IMPORTANT
-        FILE INPUT IS NOT HIDDEN
-        ======================================================
-        */
+        /* ======================================================
+           FILE INPUT
+        ====================================================== */
 
         #fileInput {
             display: block;
-
             width: 100%;
             max-width: 400px;
-
             padding: 12px;
-
             background: white;
-
             border: 2px solid #159447;
-
             border-radius: 8px;
-
             font-size: 15px;
-
             cursor: pointer;
         }
 
         #fileInput::file-selector-button {
             background: #159447;
-
             color: white;
-
             border: none;
-
             padding: 12px 20px;
-
             border-radius: 6px;
-
             margin-right: 15px;
-
             font-weight: bold;
-
             cursor: pointer;
         }
 
@@ -185,44 +182,38 @@
             background: #117d3b;
         }
 
-        /* SELECTED FILE */
+        /* ======================================================
+           FILE NAME
+        ====================================================== */
 
         #fileName {
             margin-top: 20px;
-
             font-weight: bold;
-
-            color: #159447;
-
+            color: #687d76;
             min-height: 25px;
-
             text-align: center;
-
             word-break: break-word;
         }
 
-        /* PROCESS */
+        /* ======================================================
+           PROCESS BUTTON
+        ====================================================== */
 
         #processBtn {
             display: block;
-
             margin: 30px auto;
-
             padding: 15px 35px;
-
             border: none;
-
             border-radius: 8px;
-
             background: #159447;
-
             color: white;
-
             font-size: 16px;
-
             font-weight: bold;
-
             cursor: pointer;
+        }
+
+        #processBtn:hover:not(:disabled) {
+            background: #117d3b;
         }
 
         #processBtn:disabled {
@@ -230,42 +221,37 @@
             cursor: not-allowed;
         }
 
-        /* MESSAGE */
+        /* ======================================================
+           MESSAGE
+        ====================================================== */
 
         #message {
             text-align: center;
             margin: 20px 0;
+            min-height: 20px;
         }
 
         .error {
             display: inline-block;
-
             background: #ffe5e5;
-
             color: #b42318;
-
             padding: 14px 20px;
-
             border-radius: 8px;
-
             font-weight: bold;
         }
 
         .success {
             display: inline-block;
-
             background: #e4f7ea;
-
             color: #147a3d;
-
             padding: 14px 20px;
-
             border-radius: 8px;
-
             font-weight: bold;
         }
 
-        /* LOADING */
+        /* ======================================================
+           LOADING
+        ====================================================== */
 
         #loading {
             text-align: center;
@@ -276,14 +262,10 @@
         .loader {
             width: 40px;
             height: 40px;
-
             border: 4px solid #dceee4;
             border-top: 4px solid #159447;
-
             border-radius: 50%;
-
             animation: spin 1s linear infinite;
-
             margin: auto auto 15px;
         }
 
@@ -299,11 +281,12 @@
 
         }
 
-        /* RESULTS */
+        /* ======================================================
+           RESULTS
+        ====================================================== */
 
         #results {
             display: none;
-
             margin-top: 50px;
         }
 
@@ -312,21 +295,20 @@
             margin-bottom: 30px;
         }
 
+        .result-title h2 {
+            font-size: 30px;
+        }
+
         .result-grid {
             display: grid;
-
             grid-template-columns: 1fr 1fr;
-
             gap: 25px;
         }
 
         .card {
             background: white;
-
             border-radius: 12px;
-
             padding: 25px;
-
             border: 1px solid #e0ebe5;
         }
 
@@ -334,85 +316,235 @@
             margin-bottom: 20px;
         }
 
-        .field {
-            margin-bottom: 15px;
+        /* ======================================================
+           EXTRACTED FIELDS
+        ====================================================== */
+
+        .extracted-fields-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 50px;
+            row-gap: 28px;
         }
 
-        .field label {
-            display: block;
+        .extracted-field {
+            min-width: 0;
+        }
 
+        .field-label,
+        .matching-label {
+            color: #64748b;
             font-size: 14px;
-
-            font-weight: bold;
-
-            margin-bottom: 6px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 9px;
         }
 
-        .field input {
-            width: 100%;
-
-            padding: 11px;
-
-            border: 1px solid #d4e2dd;
-
-            border-radius: 6px;
-
-            background: #f8fbfa;
+        .field-value,
+        .matching-value {
+            color: #334155;
+            font-size: 18px;
+            line-height: 1.35;
+            word-break: break-word;
         }
+
+        /* ======================================================
+           OCR TEXT
+        ====================================================== */
 
         #ocrText {
             width: 100%;
-
-            min-height: 350px;
-
+            min-height: 400px;
             resize: vertical;
-
             padding: 15px;
-
             border: 1px solid #d4e2dd;
-
             border-radius: 6px;
-
             font-family: monospace;
-
             line-height: 1.5;
+            background: #f8fbfa;
         }
 
-        #downloadBtn {
+        /* ======================================================
+           VALIDATION
+        ====================================================== */
+
+        #validationContainer,
+        #matchingContainer {
+            margin-top: 35px;
+            background: #f8fbfa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #e0ebe5;
+        }
+
+        #validationContainer h3,
+        #matchingContainer h3 {
+            margin-bottom: 18px;
+            font-size: 22px;
+            color: #123d32;
+        }
+
+        .validation-row {
+            margin: 12px 0;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #334155;
+        }
+
+        .validation-key {
+            font-weight: 600;
+        }
+
+        .validation-status {
+            font-weight: 700;
+        }
+
+        .validation-status.pass {
+            color: #147a3d;
+        }
+
+        .validation-status.fail {
+            color: #b42318;
+        }
+
+        /* ======================================================
+           MATCHING
+        ====================================================== */
+
+        .matching-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 50px;
+            row-gap: 25px;
+        }
+
+        .trip-link {
+            color: #2563eb;
+        }
+
+        /* ======================================================
+           ACCURACY TEST
+        ====================================================== */
+
+        .accuracy-card {
+            margin-top: 25px;
+        }
+
+        .accuracy-description {
+            color: #687d76;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .accuracy-label {
             display: block;
-
-            margin: 30px auto;
-
-            padding: 14px 28px;
-
-            border: none;
-
-            border-radius: 8px;
-
-            background: #123d32;
-
-            color: white;
-
             font-weight: bold;
+            margin-bottom: 8px;
+            color: #31574e;
+        }
 
+        #referenceText {
+            width: 100%;
+            min-height: 250px;
+            resize: vertical;
+            padding: 15px;
+            border: 1px solid #cdded7;
+            border-radius: 8px;
+            background: #ffffff;
+            font-family: monospace;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        #referenceText:focus {
+            outline: none;
+            border-color: #159447;
+            box-shadow: 0 0 0 2px rgba(21, 148, 71, 0.1);
+        }
+
+        #calculateAccuracyBtn {
+            margin-top: 15px;
+            padding: 12px 22px;
+            border: none;
+            border-radius: 7px;
+            background: #159447;
+            color: white;
+            font-weight: bold;
             cursor: pointer;
         }
 
-        /* FOOTER */
+        #calculateAccuracyBtn:hover {
+            background: #117d3b;
+        }
+
+        #accuracyResult {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f4faf7;
+            border: 1px solid #cfe2d9;
+            border-radius: 8px;
+        }
+
+        .accuracy-row {
+            margin: 8px 0;
+            font-size: 15px;
+        }
+
+        .accuracy-value {
+            font-weight: bold;
+        }
+
+        .overall-accuracy {
+            margin-top: 12px;
+            font-size: 21px;
+            font-weight: bold;
+            color: #159447;
+        }
+
+        .accuracy-note {
+            margin-top: 12px;
+            color: #687d76;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* ======================================================
+           DOWNLOAD
+        ====================================================== */
+
+        #downloadBtn {
+            display: block;
+            margin: 30px auto;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            background: #123d32;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #downloadBtn:hover {
+            background: #0b2d25;
+        }
+
+        /* ======================================================
+           FOOTER
+        ====================================================== */
 
         footer {
             background: #123d32;
-
             color: white;
-
             text-align: center;
-
             padding: 25px;
-
             margin-top: 50px;
         }
 
-        /* MOBILE */
+        /* ======================================================
+           MOBILE
+        ====================================================== */
 
         @media(max-width: 750px) {
 
@@ -423,8 +555,13 @@
                 gap: 15px;
             }
 
+            .navbar nav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
             .navbar a {
-                margin: 0 8px;
+                margin: 5px 8px;
             }
 
             .page-header h1 {
@@ -439,6 +576,11 @@
                 padding: 25px 15px;
             }
 
+            .extracted-fields-grid,
+            .matching-grid {
+                grid-template-columns: 1fr;
+            }
+
         }
 
     </style>
@@ -451,7 +593,7 @@
 
 <!-- ======================================================
      NAVBAR
-======================================================= -->
+====================================================== -->
 
 <header class="navbar">
 
@@ -461,25 +603,15 @@
 
     <nav>
 
-        <a href="index.html">
-            Home
-        </a>
+        <a href="index.html">Home</a>
 
-        <a href="technology.html">
-            Technology
-        </a>
+        <a href="technology.html">Technology</a>
 
-        <a href="services.html">
-            Services
-        </a>
+        <a href="services.html">Services</a>
 
-        <a href="demo.html">
-            Live Demo
-        </a>
+        <a href="demo.html">Live Demo</a>
 
-        <a href="contact.html">
-            Contact
-        </a>
+        <a href="contact.html">Contact</a>
 
     </nav>
 
@@ -488,7 +620,7 @@
 
 <!-- ======================================================
      HEADER
-======================================================= -->
+====================================================== -->
 
 <section class="page-header">
 
@@ -510,13 +642,13 @@
 
 <!-- ======================================================
      MAIN
-======================================================= -->
+====================================================== -->
 
 <main class="main">
 
 
     <!-- ==================================================
-         UPLOAD BOX
+         UPLOAD
     =================================================== -->
 
     <div
@@ -537,20 +669,14 @@
         </p>
 
         <p class="supported">
-            Supported: PDF, JPG, JPEG, PNG, TIFF
+            Supported: PDF, JPG, JPEG, PNG, TIFF, BMP
         </p>
-
-
-        <!-- ==================================================
-             ACTUAL FILE INPUT
-        =================================================== -->
 
         <input
             type="file"
             id="fileInput"
-            accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,application/pdf,image/jpeg,image/png,image/tiff"
+            accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.bmp"
         >
-
 
         <div id="fileName">
             No file selected
@@ -560,7 +686,7 @@
 
 
     <!-- ==================================================
-         PROCESS BUTTON
+         PROCESS
     =================================================== -->
 
     <button
@@ -596,7 +722,7 @@
 
     <!-- ==================================================
          RESULTS
-    ================================================== -->
+    =================================================== -->
 
     <section id="results">
 
@@ -616,7 +742,9 @@
         <div class="result-grid">
 
 
-            <!-- FIELDS -->
+            <!-- ==================================================
+                 STRUCTURED FIELDS
+            ================================================== -->
 
             <div class="card">
 
@@ -626,10 +754,16 @@
 
                 <div id="fieldsContainer"></div>
 
+                <div id="validationContainer"></div>
+
+                <div id="matchingContainer"></div>
+
             </div>
 
 
-            <!-- OCR -->
+            <!-- ==================================================
+                 OCR TEXT
+            ================================================== -->
 
             <div class="card">
 
@@ -649,6 +783,98 @@
         </div>
 
 
+        <!-- ==================================================
+             OCR ACCURACY
+        ================================================== -->
+
+        <div class="card accuracy-card">
+
+            <h3>
+                OCR Accuracy Test
+            </h3>
+
+            <p class="accuracy-description">
+                To calculate OCR accuracy, enter the
+                <strong>correct text from the original document</strong>
+                below. This reference text is compared with the
+                OCR text extracted from your uploaded document.
+            </p>
+
+            <label
+                class="accuracy-label"
+                for="referenceText"
+            >
+                Reference / Correct Text
+            </label>
+
+            <textarea
+                id="referenceText"
+                placeholder="Paste the exact correct text from the original document here..."
+            ></textarea>
+
+            <button
+                type="button"
+                id="calculateAccuracyBtn"
+            >
+                Calculate Accuracy
+            </button>
+
+
+            <div id="accuracyResult">
+
+                <div class="accuracy-row">
+                    Character Accuracy:
+                    <span
+                        class="accuracy-value"
+                        id="characterAccuracy"
+                    >
+                        0%
+                    </span>
+                </div>
+
+                <div class="accuracy-row">
+                    Word Accuracy:
+                    <span
+                        class="accuracy-value"
+                        id="wordAccuracy"
+                    >
+                        0%
+                    </span>
+                </div>
+
+                <div class="accuracy-row">
+                    Correct Words:
+                    <span
+                        class="accuracy-value"
+                        id="correctWords"
+                    >
+                        0 / 0
+                    </span>
+                </div>
+
+                <div class="overall-accuracy">
+                    Overall OCR Accuracy:
+                    <span id="overallAccuracy">
+                        0%
+                    </span>
+                </div>
+
+                <p class="accuracy-note">
+                    Accuracy is calculated by comparing the
+                    reference text with the OCR text returned
+                    by the backend. Validation and matching
+                    messages are not included in this calculation.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             DOWNLOAD
+        ================================================== -->
+
         <button
             type="button"
             id="downloadBtn"
@@ -664,7 +890,7 @@
 
 <!-- ======================================================
      FOOTER
-======================================================= -->
+====================================================== -->
 
 <footer>
 
@@ -673,855 +899,12 @@
 </footer>
 
 
+<!-- ======================================================
+     JAVASCRIPT
+====================================================== -->
 
-<script>
+<script src="js/demo.js"></script>
 
-
-// ==========================================================
-// DataExtract OCR
-// EVERYTHING IS INSIDE THIS HTML FOR TESTING
-// ==========================================================
-
-console.log("DataExtract page loading...");
-
-
-// ==========================================================
-// ELEMENTS
-// ==========================================================
-
-const fileInput =
-    document.getElementById("fileInput");
-
-const fileName =
-    document.getElementById("fileName");
-
-const uploadBox =
-    document.getElementById("uploadBox");
-
-const processBtn =
-    document.getElementById("processBtn");
-
-const loading =
-    document.getElementById("loading");
-
-const message =
-    document.getElementById("message");
-
-const results =
-    document.getElementById("results");
-
-const fieldsContainer =
-    document.getElementById("fieldsContainer");
-
-const ocrText =
-    document.getElementById("ocrText");
-
-const downloadBtn =
-    document.getElementById("downloadBtn");
-
-
-let selectedFile = null;
-
-let latestResult = null;
-
-
-// ==========================================================
-// API
-// ==========================================================
-
-const API_URL =
-    "http://127.0.0.1:8001/api/ocr";
-
-
-// ==========================================================
-// FILE INPUT CHANGE
-// ==========================================================
-
-fileInput.addEventListener(
-    "change",
-    function(event) {
-
-        console.log(
-            "================================"
-        );
-
-        console.log(
-            "FILE INPUT CHANGE EVENT"
-        );
-
-        console.log(
-            "================================"
-        );
-
-
-        const files =
-            event.target.files;
-
-
-        console.log(
-            "Files:",
-            files
-        );
-
-
-        if (
-            !files ||
-            files.length === 0
-        ) {
-
-            console.log(
-                "No file selected"
-            );
-
-            fileName.textContent =
-                "No file selected";
-
-            processBtn.disabled =
-                true;
-
-            selectedFile = null;
-
-            return;
-        }
-
-
-        const file =
-            files[0];
-
-
-        console.log(
-            "File received:",
-            file.name
-        );
-
-        console.log(
-            "File size:",
-            file.size
-        );
-
-        console.log(
-            "File type:",
-            file.type
-        );
-
-
-        // ----------------------------------------------
-        // CHECK SIZE
-        // ----------------------------------------------
-
-        const maxSize =
-            20 * 1024 * 1024;
-
-
-        if (
-            file.size === 0
-        ) {
-
-            showError(
-                "The selected file is empty."
-            );
-
-            return;
-        }
-
-
-        if (
-            file.size > maxSize
-        ) {
-
-            showError(
-                "File is larger than 20 MB."
-            );
-
-            return;
-        }
-
-
-        // ----------------------------------------------
-        // CHECK EXTENSION
-        // ----------------------------------------------
-
-        const extension =
-            file.name
-                .split(".")
-                .pop()
-                .toLowerCase();
-
-
-        const allowed = [
-            "pdf",
-            "jpg",
-            "jpeg",
-            "png",
-            "tif",
-            "tiff"
-        ];
-
-
-        if (
-            !allowed.includes(extension)
-        ) {
-
-            showError(
-                "Unsupported file type."
-            );
-
-            return;
-        }
-
-
-        // ----------------------------------------------
-        // SAVE FILE
-        // ----------------------------------------------
-
-        selectedFile =
-            file;
-
-
-        // ----------------------------------------------
-        // DISPLAY FILE
-        // ----------------------------------------------
-
-        fileName.textContent =
-            "✓ Selected: " +
-            file.name;
-
-
-        fileName.style.color =
-            "#159447";
-
-
-        // ----------------------------------------------
-        // ENABLE BUTTON
-        // ----------------------------------------------
-
-        processBtn.disabled =
-            false;
-
-
-        clearMessage();
-
-
-        console.log(
-            "File successfully accepted."
-        );
-
-    }
-);
-
-
-// ==========================================================
-// DRAG OVER
-// ==========================================================
-
-uploadBox.addEventListener(
-    "dragover",
-    function(event) {
-
-        event.preventDefault();
-
-        uploadBox.classList.add(
-            "dragging"
-        );
-
-    }
-);
-
-
-// ==========================================================
-// DRAG LEAVE
-// ==========================================================
-
-uploadBox.addEventListener(
-    "dragleave",
-    function() {
-
-        uploadBox.classList.remove(
-            "dragging"
-        );
-
-    }
-);
-
-
-// ==========================================================
-// DROP
-// ==========================================================
-
-uploadBox.addEventListener(
-    "drop",
-    function(event) {
-
-        event.preventDefault();
-
-        uploadBox.classList.remove(
-            "dragging"
-        );
-
-
-        const files =
-            event.dataTransfer.files;
-
-
-        if (
-            !files ||
-            files.length === 0
-        ) {
-
-            return;
-        }
-
-
-        // Manually process dropped file
-
-        const file =
-            files[0];
-
-
-        processSelectedFile(
-            file
-        );
-
-    }
-);
-
-
-// ==========================================================
-// HANDLE DROPPED FILE
-// ==========================================================
-
-function processSelectedFile(file) {
-
-    const extension =
-        file.name
-            .split(".")
-            .pop()
-            .toLowerCase();
-
-
-    const allowed = [
-        "pdf",
-        "jpg",
-        "jpeg",
-        "png",
-        "tif",
-        "tiff"
-    ];
-
-
-    if (
-        !allowed.includes(extension)
-    ) {
-
-        showError(
-            "Unsupported file type."
-        );
-
-        return;
-    }
-
-
-    if (
-        file.size === 0
-    ) {
-
-        showError(
-            "The selected file is empty."
-        );
-
-        return;
-    }
-
-
-    if (
-        file.size >
-        20 * 1024 * 1024
-    ) {
-
-        showError(
-            "File is larger than 20 MB."
-        );
-
-        return;
-    }
-
-
-    selectedFile =
-        file;
-
-
-    fileName.textContent =
-        "✓ Selected: " +
-        file.name;
-
-
-    fileName.style.color =
-        "#159447";
-
-
-    processBtn.disabled =
-        false;
-
-}
-
-
-// ==========================================================
-// PROCESS BUTTON
-// ==========================================================
-
-processBtn.addEventListener(
-    "click",
-    async function() {
-
-        console.log(
-            "Process Document clicked."
-        );
-
-
-        if (!selectedFile) {
-
-            showError(
-                "Please select a file first."
-            );
-
-            return;
-        }
-
-
-        await sendToBackend();
-
-    }
-);
-
-
-// ==========================================================
-// SEND FILE TO FASTAPI
-// ==========================================================
-
-async function sendToBackend() {
-
-    clearMessage();
-
-    loading.style.display =
-        "block";
-
-    processBtn.disabled =
-        true;
-
-    processBtn.textContent =
-        "Processing...";
-
-
-    try {
-
-        console.log(
-            "Sending file to:",
-            API_URL
-        );
-
-
-        // ----------------------------------------------
-        // FORM DATA
-        // ----------------------------------------------
-
-        const formData =
-            new FormData();
-
-
-        formData.append(
-            "file",
-            selectedFile
-        );
-
-
-        // ----------------------------------------------
-        // REQUEST
-        // ----------------------------------------------
-
-        const response =
-            await fetch(
-                API_URL,
-                {
-                    method: "POST",
-                    body: formData
-                }
-            );
-
-
-        console.log(
-            "Response status:",
-            response.status
-        );
-
-
-        // ----------------------------------------------
-        // RESPONSE
-        // ----------------------------------------------
-
-        const data =
-            await response.json();
-
-
-        console.log(
-            "Backend result:",
-            data
-        );
-
-
-        if (
-            !response.ok
-        ) {
-
-            throw new Error(
-                data.detail ||
-                data.message ||
-                "Processing failed."
-            );
-        }
-
-
-        latestResult =
-            data;
-
-
-        // ----------------------------------------------
-        // SHOW RESULTS
-        // ----------------------------------------------
-
-        showResults(
-            data
-        );
-
-
-        showSuccess(
-            "Document processed successfully."
-        );
-
-
-    }
-    catch(error) {
-
-        console.error(
-            "Backend error:",
-            error
-        );
-
-
-        showError(
-            "Backend connection failed: " +
-            error.message
-        );
-
-    }
-    finally {
-
-        loading.style.display =
-            "none";
-
-
-        processBtn.disabled =
-            selectedFile === null;
-
-
-        processBtn.textContent =
-            "Process Document";
-
-    }
-
-}
-
-
-// ==========================================================
-// SHOW RESULTS
-// ==========================================================
-
-function showResults(data) {
-
-    results.style.display =
-        "block";
-
-
-    // ------------------------------------------------------
-    // OCR TEXT
-    // ------------------------------------------------------
-
-    let text =
-        data.full_text ||
-        data.text||
-        data.ocr_text ||
-        data.extracted_text ||
-        "";
-
-
-    if (
-        !text &&
-        data.result
-    ) {
-
-        text =
-            data.result.text ||
-            data.result.ocr_text ||
-            data.result.extracted_text ||
-            "";
-
-    }
-
-
-    ocrText.value =
-        text ||
-        "No text detected.";
-
-
-    // ------------------------------------------------------
-    // FIELDS
-    // ------------------------------------------------------
-
-    let fields =
-        data.fields ||
-        {};
-
-
-    if (
-        Object.keys(fields).length === 0 &&
-        data.result &&
-        data.result.fields
-    ) {
-
-        fields =
-            data.result.fields;
-
-    }
-
-
-    fieldsContainer.innerHTML =
-        "";
-
-
-    Object.entries(fields)
-        .forEach(
-            function([key, value]) {
-
-                const div =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                div.className =
-                    "field";
-
-
-                const label =
-                    document.createElement(
-                        "label"
-                    );
-
-
-                label.textContent =
-                    formatLabel(key);
-
-
-                const input =
-                    document.createElement(
-                        "input"
-                    );
-
-
-                input.type =
-                    "text";
-
-
-                input.readOnly =
-                    true;
-
-
-                input.value =
-                    value === null ||
-                    value === undefined ||
-                    value === ""
-                        ? "Not detected"
-                        : value;
-
-
-                div.appendChild(
-                    label
-                );
-
-
-                div.appendChild(
-                    input
-                );
-
-
-                fieldsContainer.appendChild(
-                    div
-                );
-
-            }
-        );
-
-
-    results.scrollIntoView({
-        behavior: "smooth"
-    });
-
-}
-
-
-// ==========================================================
-// FORMAT LABEL
-// ==========================================================
-
-function formatLabel(key) {
-
-    return key
-        .replace(/_/g, " ")
-        .replace(
-            /\b\w/g,
-            function(letter) {
-
-                return letter.toUpperCase();
-
-            }
-        );
-
-}
-
-
-// ==========================================================
-// ERROR
-// ==========================================================
-
-function showError(text) {
-
-    message.innerHTML =
-        '<div class="error">' +
-        text +
-        '</div>';
-
-}
-
-
-// ==========================================================
-// SUCCESS
-// ==========================================================
-
-function showSuccess(text) {
-
-    message.innerHTML =
-        '<div class="success">' +
-        text +
-        '</div>';
-
-}
-
-
-// ==========================================================
-// CLEAR MESSAGE
-// ==========================================================
-
-function clearMessage() {
-
-    message.innerHTML =
-        "";
-
-}
-
-
-// ==========================================================
-// DOWNLOAD
-// ==========================================================
-
-downloadBtn.addEventListener(
-    "click",
-    function() {
-
-        if (!latestResult) {
-
-            showError(
-                "No result available."
-            );
-
-            return;
-        }
-
-
-        const blob =
-            new Blob(
-                [
-                    JSON.stringify(
-                        latestResult,
-                        null,
-                        2
-                    )
-                ],
-                {
-                    type:
-                        "application/json"
-                }
-            );
-
-
-        const url =
-            URL.createObjectURL(
-                blob
-            );
-
-
-        const link =
-            document.createElement(
-                "a"
-            );
-
-
-        link.href =
-            url;
-
-
-        link.download =
-            "dataextract-result.json";
-
-
-        document.body.appendChild(
-            link
-        );
-
-
-        link.click();
-
-
-        document.body.removeChild(
-            link
-        );
-
-
-        URL.revokeObjectURL(
-            url
-        );
-
-    }
-);
-
-
-// ==========================================================
-// STARTUP
-// ==========================================================
-
-console.log(
-    "File input element:",
-    fileInput
-);
-
-console.log(
-    "Process button:",
-    processBtn
-);
-
-console.log(
-    "DataExtract frontend ready."
-);
-
-</script>
 
 </body>
 
