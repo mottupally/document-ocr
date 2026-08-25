@@ -9,7 +9,7 @@
 // ============================================================
 
 // LOCAL BACKEND
-const API_URL = "http://127.0.0.1:8001/api/ocr";
+const API_URL = "https://document-ocr-zthu.onrender.com/api/ocr";
 
 // WHEN DEPLOYING TO RENDER, CHANGE TO:
 // const API_URL = "https://YOUR-BACKEND.onrender.com/api/ocr";
