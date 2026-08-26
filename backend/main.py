@@ -2,22 +2,16 @@ import os
 import uuid
 import shutil
 
-from fastapi import (
-    FastAPI,
-    UploadFile,
-    File,
-    HTTPException
-)
-
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from ocr import process_document
 from extractor import extract_fields
 
 
-# --------------------------------------------------
+# ============================================================
 # CREATE APP
-# --------------------------------------------------
+# ============================================================
 
 app = FastAPI(
     title="DataExtract OCR API",
@@ -26,38 +20,31 @@ app = FastAPI(
 )
 
 
-# --------------------------------------------------
+# ============================================================
 # CORS
-# --------------------------------------------------
+# ============================================================
 
 app.add_middleware(
     CORSMiddleware,
-
     allow_origins=["*"],
-
     allow_credentials=True,
-
     allow_methods=["*"],
-
     allow_headers=["*"]
 )
 
 
-# --------------------------------------------------
+# ============================================================
 # UPLOAD DIRECTORY
-# --------------------------------------------------
+# ============================================================
 
 UPLOAD_DIR = "uploads"
 
-os.makedirs(
-    UPLOAD_DIR,
-    exist_ok=True
-)
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-# --------------------------------------------------
+# ============================================================
 # ALLOWED FILE TYPES
-# --------------------------------------------------
+# ============================================================
 
 ALLOWED_EXTENSIONS = {
     ".pdf",
@@ -70,9 +57,9 @@ ALLOWED_EXTENSIONS = {
 }
 
 
-# --------------------------------------------------
+# ============================================================
 # ROOT
-# --------------------------------------------------
+# ============================================================
 
 @app.get("/")
 def root():
@@ -83,9 +70,9 @@ def root():
     }
 
 
-# --------------------------------------------------
+# ============================================================
 # HEALTH CHECK
-# --------------------------------------------------
+# ============================================================
 
 @app.get("/health")
 def health():
@@ -96,320 +83,175 @@ def health():
     }
 
 
-# --------------------------------------------------
+# ============================================================
 # VALIDATION
-# --------------------------------------------------
+# ============================================================
 
 def validate_fields(fields):
-    """
-    Validate extracted fields.
-
-    This creates the validation structure
-    required by the frontend.
-    """
 
     validation = {}
 
-    # ----------------------------------------------
-    # VEHICLE
-    # ----------------------------------------------
-
+    # Vehicle
     vehicle = fields.get("vehicle")
 
-    if vehicle:
-        validation["vehicle"] = {
-            "status": "PASS",
-            "message": "Vehicle matched"
-        }
-    else:
-        validation["vehicle"] = {
-            "status": "FAIL",
-            "message": "Vehicle not detected"
-        }
+    validation["vehicle"] = {
+        "status": "PASS" if vehicle else "FAIL",
+        "message": "Vehicle matched"
+        if vehicle
+        else "Vehicle not detected"
+    }
 
-
-    # ----------------------------------------------
-    # CUSTOMER
-    # ----------------------------------------------
-
+    # Customer
     customer = fields.get("customer")
 
-    if customer:
-        validation["customer"] = {
-            "status": "PASS",
-            "message": "Customer matched"
-        }
-    else:
-        validation["customer"] = {
-            "status": "FAIL",
-            "message": "Customer not detected"
-        }
+    validation["customer"] = {
+        "status": "PASS" if customer else "FAIL",
+        "message": "Customer matched"
+        if customer
+        else "Customer not detected"
+    }
 
-
-    # ----------------------------------------------
-    # ORIGIN
-    # ----------------------------------------------
-
+    # Origin
     origin = fields.get("origin")
 
-    if origin:
-        validation["origin"] = {
-            "status": "PASS",
-            "message": "Origin extracted"
-        }
-    else:
-        validation["origin"] = {
-            "status": "FAIL",
-            "message": "Origin not detected"
-        }
+    validation["origin"] = {
+        "status": "PASS" if origin else "FAIL",
+        "message": "Origin extracted"
+        if origin
+        else "Origin not detected"
+    }
 
-
-    # ----------------------------------------------
-    # DESTINATION
-    # ----------------------------------------------
-
+    # Destination
     destination = fields.get("destination")
 
-    if destination:
-        validation["destination"] = {
-            "status": "PASS",
-            "message": "Destination extracted"
-        }
-    else:
-        validation["destination"] = {
-            "status": "FAIL",
-            "message": "Destination not detected"
-        }
+    validation["destination"] = {
+        "status": "PASS" if destination else "FAIL",
+        "message": "Destination extracted"
+        if destination
+        else "Destination not detected"
+    }
 
-
-    # ----------------------------------------------
-    # GATE OUT
-    # ----------------------------------------------
-
+    # Gate Out
     gate_out = (
         fields.get("gateOut")
         or fields.get("gate_out")
         or fields.get("gateout")
     )
 
-    if gate_out:
-        validation["gateOut"] = {
-            "status": "PASS",
-            "message": "Gate-out extracted"
-        }
-    else:
-        validation["gateOut"] = {
-            "status": "FAIL",
-            "message": "Gate-out not detected"
-        }
+    validation["gateOut"] = {
+        "status": "PASS" if gate_out else "FAIL",
+        "message": "Gate-out extracted"
+        if gate_out
+        else "Gate-out not detected"
+    }
 
-
-    # ----------------------------------------------
     # LR
-    # ----------------------------------------------
-
     lr = fields.get("lr")
 
-    if lr:
-        validation["lr"] = {
-            "status": "PASS",
-            "message": "LR extracted"
-        }
-    else:
-        validation["lr"] = {
-            "status": "FAIL",
-            "message": "LR not detected"
-        }
+    validation["lr"] = {
+        "status": "PASS" if lr else "FAIL",
+        "message": "LR extracted"
+        if lr
+        else "LR not detected"
+    }
 
-
-    # ----------------------------------------------
-    # DELIVERY
-    # ----------------------------------------------
-
+    # Delivery
     delivery = fields.get("delivery")
 
-    if delivery:
-        validation["delivery"] = {
-            "status": "PASS",
-            "message": "Delivery number extracted"
-        }
-    else:
-        validation["delivery"] = {
-            "status": "FAIL",
-            "message": "Delivery number not detected"
-        }
+    validation["delivery"] = {
+        "status": "PASS" if delivery else "FAIL",
+        "message": "Delivery number extracted"
+        if delivery
+        else "Delivery number not detected"
+    }
 
-
-    # ----------------------------------------------
-    # E-WAY BILL
-    # ----------------------------------------------
-
+    # E-Way Bill
     eway_bill = (
         fields.get("ewayBill")
         or fields.get("eway_bill")
         or fields.get("eWayBill")
     )
 
-    if eway_bill:
-        validation["ewayBill"] = {
-            "status": "PASS",
-            "message": "E-Way Bill extracted"
-        }
-    else:
-        validation["ewayBill"] = {
-            "status": "FAIL",
-            "message": "E-Way Bill not detected"
-        }
+    validation["ewayBill"] = {
+        "status": "PASS" if eway_bill else "FAIL",
+        "message": "E-Way Bill extracted"
+        if eway_bill
+        else "E-Way Bill not detected"
+    }
 
+    # Driver
+    validation["driver"] = {
+        "status": "PASS" if vehicle else "FAIL",
+        "message": "Driver resolved (VEHICLE_CURRENT)"
+        if vehicle
+        else "Driver could not be resolved"
+    }
 
-    # ----------------------------------------------
-    # DRIVER
-    # ----------------------------------------------
+    # Distance
+    validation["distance"] = {
+        "status": "PASS"
+        if origin and destination
+        else "FAIL",
 
-    if vehicle:
+        "message":
+            "Distance from unique route template"
+            if origin and destination
+            else "Distance could not be determined"
+    }
 
-        validation["driver"] = {
-            "status": "PASS",
-            "message": "Driver resolved (VEHICLE_CURRENT)"
-        }
-
-    else:
-
-        validation["driver"] = {
-            "status": "FAIL",
-            "message": "Driver could not be resolved"
-        }
-
-
-    # ----------------------------------------------
-    # DISTANCE
-    # ----------------------------------------------
-
-    if origin and destination:
-
-        validation["distance"] = {
-            "status": "PASS",
-            "message": "Distance from unique route template"
-        }
-
-    else:
-
-        validation["distance"] = {
-            "status": "FAIL",
-            "message": "Distance could not be determined"
-        }
-
-
-    # ----------------------------------------------
-    # DUPLICATE
-    # ----------------------------------------------
-
+    # Duplicate
     validation["duplicate"] = {
         "status": "PASS",
         "message": "No duplicate trip"
     }
 
-
     return validation
 
 
-# --------------------------------------------------
+# ============================================================
 # MATCHING
-# --------------------------------------------------
+# ============================================================
 
 def create_matching(fields):
-    """
-    Create matching information for the frontend.
-
-    IMPORTANT:
-    This is currently a demo/static matching layer.
-    Replace these values with your actual database/
-    route/vehicle matching logic when available.
-    """
 
     vehicle = fields.get("vehicle")
-
     origin = fields.get("origin")
-
     destination = fields.get("destination")
 
-
-    # --------------------------------------------------
-    # DRIVER SOURCE
-    # --------------------------------------------------
-
     if vehicle:
-
         driver_source = "VEHICLE_CURRENT"
-
     else:
-
         driver_source = "-"
 
-
-    # --------------------------------------------------
-    # DISTANCE
-    # --------------------------------------------------
-
     if origin and destination:
 
-        # Demo value.
-        # Replace with actual route calculation.
         distance = 420
-
         distance_source = "ROUTE_TEMPLATE"
 
-    else:
-
-        distance = ""
-
-        distance_source = ""
-
-
-    # --------------------------------------------------
-    # TRIP
-    # --------------------------------------------------
-
-    if origin and destination:
-
-        # Demo trip number.
-        # Replace with your actual trip lookup.
         trip = "TRP-2026-000064"
 
     else:
 
+        distance = ""
+        distance_source = ""
         trip = ""
 
-
     return {
-
-        "driverSource":
-            driver_source,
-
-        "distance":
-            distance,
-
-        "distanceSource":
-            distance_source,
-
-        "trip":
-            trip
-
+        "driverSource": driver_source,
+        "distance": distance,
+        "distanceSource": distance_source,
+        "trip": trip
     }
 
 
-# --------------------------------------------------
-# UPLOAD AND PROCESS DOCUMENT
-# --------------------------------------------------
+# ============================================================
+# OCR ENDPOINT
+# ============================================================
 
 @app.post("/api/ocr")
 async def process_uploaded_document(
     file: UploadFile = File(...)
 ):
-
-    # --------------------------------------------------
-    # CHECK FILENAME
-    # --------------------------------------------------
 
     if not file.filename:
 
@@ -418,151 +260,110 @@ async def process_uploaded_document(
             detail="No filename provided."
         )
 
-
-    # --------------------------------------------------
-    # GET EXTENSION
-    # --------------------------------------------------
-
     extension = os.path.splitext(
         file.filename
     )[1].lower()
 
-
-    # --------------------------------------------------
-    # VALIDATE EXTENSION
-    # --------------------------------------------------
-
     if extension not in ALLOWED_EXTENSIONS:
 
         raise HTTPException(
-
             status_code=400,
-
             detail=(
                 "Unsupported file type. "
-                "Allowed: PDF, JPG, JPEG, "
-                "PNG, TIFF, BMP"
+                "Allowed: PDF, JPG, JPEG, PNG, TIFF, BMP"
             )
         )
-
-
-    # --------------------------------------------------
-    # GENERATE UNIQUE FILENAME
-    # --------------------------------------------------
 
     unique_filename = (
         f"{uuid.uuid4()}{extension}"
     )
-
 
     file_path = os.path.join(
         UPLOAD_DIR,
         unique_filename
     )
 
-
     try:
 
-        # --------------------------------------------------
-        # SAVE FILE
-        # --------------------------------------------------
-
-        with open(
-            file_path,
-            "wb"
-        ) as buffer:
+        # Save uploaded file
+        with open(file_path, "wb") as buffer:
 
             shutil.copyfileobj(
                 file.file,
                 buffer
             )
 
-
-        # --------------------------------------------------
+        # ====================================================
         # OCR
-        # --------------------------------------------------
+        # ====================================================
 
         extracted_text = process_document(
             file_path
         )
 
+        print("\n================ OCR TEXT ================\n")
+        print(extracted_text)
+        print("\n===========================================\n")
 
-        # --------------------------------------------------
+        # ====================================================
         # FIELD EXTRACTION
-        # --------------------------------------------------
+        # ====================================================
 
         fields = extract_fields(
             extracted_text
         )
 
+        print("\n============== EXTRACTED FIELDS ==============\n")
+        print(fields)
+        print("\n===============================================\n")
 
-        # --------------------------------------------------
+        # ====================================================
         # VALIDATION
-        # --------------------------------------------------
+        # ====================================================
 
         validation = validate_fields(
             fields
         )
 
-
-        # --------------------------------------------------
+        # ====================================================
         # MATCHING
-        # --------------------------------------------------
+        # ====================================================
 
         matching = create_matching(
             fields
         )
 
-
-        # --------------------------------------------------
-        # RETURN RESULT
-        # --------------------------------------------------
+        # ====================================================
+        # RESPONSE
+        # ====================================================
 
         return {
 
             "success": True,
 
-            "filename":
-                file.filename,
+            "filename": file.filename,
 
-            "fields":
-                fields,
+            "fields": fields,
 
-            "validation":
-                validation,
+            "validation": validation,
 
-            "matching":
-                matching,
+            "matching": matching,
 
-            "full_text":
-                extracted_text
+            "full_text": extracted_text
 
         }
 
-
     except Exception as e:
 
+        print("OCR ERROR:", str(e))
+
         raise HTTPException(
-
             status_code=500,
-
-            detail=(
-                f"OCR processing failed: {str(e)}"
-            )
-
+            detail=f"OCR processing failed: {str(e)}"
         )
-
 
     finally:
 
-        # --------------------------------------------------
-        # DELETE TEMPORARY FILE
-        # --------------------------------------------------
+        if os.path.exists(file_path):
 
-        if os.path.exists(
-            file_path
-        ):
-
-            os.remove(
-                file_path
-            )
+            os.remove(file_path)

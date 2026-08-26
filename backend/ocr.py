@@ -4,74 +4,102 @@ import numpy as np
 import pytesseract
 import fitz
 
-from PIL import Image
 
-
-# --------------------------------------------------
+# ============================================================
 # TESSERACT CONFIGURATION
-# --------------------------------------------------
-
-import os
-import cv2
-import numpy as np
-import pytesseract
-import fitz
-from PIL import Image
-
-# --------------------------------------------------
-# TESSERACT CONFIGURATION
-# --------------------------------------------------
+# ============================================================
 
 if os.name == "nt":
-    # Windows
+
     TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
     if os.path.exists(TESSERACT_PATH):
         pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
 else:
-    # Linux / Render
+
     pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
 
-# --------------------------------------------------
-# IMAGE PREPROCESSING
-# --------------------------------------------------
+# ============================================================
+# PREPROCESS IMAGE
+# ============================================================
 
 def preprocess_image(image):
-    """
-    Improve image quality before OCR.
-    """
 
-    # Convert BGR to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    if image is None:
+        raise ValueError("Invalid image.")
 
-    # Remove noise
-    gray = cv2.GaussianBlur(gray, (3, 3), 0)
+    # Convert to grayscale
+    gray = cv2.cvtColor(
+        image,
+        cv2.COLOR_BGR2GRAY
+    )
 
-    # Improve contrast using OTSU thresholding
-    _, threshold = cv2.threshold(
+    # --------------------------------------------------------
+    # Resize image
+    # --------------------------------------------------------
+
+    height, width = gray.shape
+
+    target_width = 1800
+
+    if width < target_width:
+
+        scale = target_width / width
+
+        gray = cv2.resize(
+            gray,
+            None,
+            fx=scale,
+            fy=scale,
+            interpolation=cv2.INTER_CUBIC
+        )
+
+    # --------------------------------------------------------
+    # Mild contrast enhancement
+    # --------------------------------------------------------
+
+    clahe = cv2.createCLAHE(
+        clipLimit=2.0,
+        tileGridSize=(8, 8)
+    )
+
+    enhanced = clahe.apply(gray)
+
+    return enhanced
+
+
+# ============================================================
+# THRESHOLD VERSION
+# ============================================================
+
+def create_threshold_image(gray):
+
+    threshold = cv2.adaptiveThreshold(
         gray,
-        0,
         255,
-        cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        31,
+        11
     )
 
     return threshold
 
 
-# --------------------------------------------------
-# DESKEW IMAGE
-# --------------------------------------------------
+# ============================================================
+# DESKEW
+# ============================================================
 
 def deskew_image(image):
-    """
-    Correct small rotation/tilt in the document.
-    """
 
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(
+        image,
+        cv2.COLOR_BGR2GRAY
+    )
 
-    # Threshold
+    # Use threshold only for detecting text angle
     _, binary = cv2.threshold(
         gray,
         0,
@@ -79,25 +107,35 @@ def deskew_image(image):
         cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
     )
 
-    coords = np.column_stack(np.where(binary > 0))
+    coords = np.column_stack(
+        np.where(binary > 0)
+    )
 
     if len(coords) < 100:
+
         return image
 
     angle = cv2.minAreaRect(coords)[-1]
 
     if angle < -45:
+
         angle = -(90 + angle)
+
     else:
+
         angle = -angle
 
-    # Ignore extremely large/incorrect angles
-    if abs(angle) > 15:
+    # Ignore unrealistic rotations
+    if abs(angle) > 10:
+
         return image
 
     height, width = image.shape[:2]
 
-    center = (width // 2, height // 2)
+    center = (
+        width // 2,
+        height // 2
+    )
 
     matrix = cv2.getRotationMatrix2D(
         center,
@@ -116,101 +154,212 @@ def deskew_image(image):
     return rotated
 
 
-# --------------------------------------------------
-# OCR IMAGE
-# --------------------------------------------------
+# ============================================================
+# OCR QUALITY CHECK
+# ============================================================
 
-def extract_text_from_image(image):
-    """
-    Perform OCR on an image.
-    """
+def ocr_score(text):
 
-    # Deskew
-    image = deskew_image(image)
+    if not text:
+        return 0
 
-    # Preprocess
-    processed = preprocess_image(image)
+    # Remove whitespace
+    characters = [
+        c for c in text
+        if not c.isspace()
+    ]
 
-    # OCR
-    text = pytesseract.image_to_string(
-        processed,
-        config="--psm 6"
+    if not characters:
+        return 0
+
+    # Number of useful alphanumeric characters
+    useful = sum(
+        c.isalnum()
+        for c in characters
     )
 
-    return text
+    # Number of lines containing text
+    lines = [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip()
+    ]
+
+    score = (
+        useful
+        + (len(lines) * 10)
+    )
+
+    return score
 
 
-# --------------------------------------------------
-# PROCESS IMAGE FILE
-# --------------------------------------------------
+# ============================================================
+# OCR IMAGE
+# ============================================================
 
-def process_image(file_path):
-    """
-    Read an image and extract text.
-    """
-
-    image = cv2.imread(file_path)
+def extract_text_from_image(image):
 
     if image is None:
-        raise ValueError("Unable to read image file.")
 
-    text = extract_text_from_image(image)
+        raise ValueError(
+            "Invalid image."
+        )
 
-    return text
+    # --------------------------------------------------------
+    # Deskew first
+    # --------------------------------------------------------
+
+    image = deskew_image(image)
+
+    # --------------------------------------------------------
+    # Preprocess
+    # --------------------------------------------------------
+
+    processed = preprocess_image(
+        image
+    )
+
+    # --------------------------------------------------------
+    # Create second OCR version
+    # --------------------------------------------------------
+
+    threshold = create_threshold_image(
+        processed
+    )
+
+    # --------------------------------------------------------
+    # OCR VERSION 1
+    # --------------------------------------------------------
+
+    text_normal = pytesseract.image_to_string(
+        processed,
+        config="--oem 3 --psm 6"
+    )
+
+    # --------------------------------------------------------
+    # OCR VERSION 2
+    # --------------------------------------------------------
+
+    text_threshold = pytesseract.image_to_string(
+        threshold,
+        config="--oem 3 --psm 6"
+    )
+
+    # --------------------------------------------------------
+    # OCR VERSION 3
+    # --------------------------------------------------------
+
+    text_auto = pytesseract.image_to_string(
+        processed,
+        config="--oem 3 --psm 3"
+    )
+
+    # --------------------------------------------------------
+    # Select best OCR result
+    # --------------------------------------------------------
+
+    results = [
+        text_normal,
+        text_threshold,
+        text_auto
+    ]
+
+    best_text = max(
+        results,
+        key=ocr_score
+    )
+
+    return best_text.strip()
 
 
-# --------------------------------------------------
+# ============================================================
+# PROCESS IMAGE
+# ============================================================
+
+def process_image(file_path):
+
+    image = cv2.imread(
+        file_path
+    )
+
+    if image is None:
+
+        raise ValueError(
+            "Unable to read image file."
+        )
+
+    return extract_text_from_image(
+        image
+    )
+
+
+# ============================================================
 # PROCESS PDF
-# --------------------------------------------------
+# ============================================================
 
 def process_pdf(file_path):
-    """
-    Convert each PDF page to an image and perform OCR.
-    """
 
-    document = fitz.open(file_path)
+    document = fitz.open(
+        file_path
+    )
 
     all_text = []
 
-    for page_number in range(len(document)):
+    try:
 
-        page = document[page_number]
+        for page_number in range(
+            len(document)
+        ):
 
-        pixmap = page.get_pixmap(
-            matrix=fitz.Matrix(2, 2)
-        )
+            page = document[
+                page_number
+            ]
 
-        image_bytes = pixmap.tobytes("png")
+            # Render PDF at higher resolution
+            pixmap = page.get_pixmap(
+                matrix=fitz.Matrix(3, 3),
+                alpha=False
+            )
 
-        image_array = np.frombuffer(
-            image_bytes,
-            dtype=np.uint8
-        )
+            image_bytes = pixmap.tobytes(
+                "png"
+            )
 
-        image = cv2.imdecode(
-            image_array,
-            cv2.IMREAD_COLOR
-        )
+            image_array = np.frombuffer(
+                image_bytes,
+                dtype=np.uint8
+            )
 
-        text = extract_text_from_image(image)
+            image = cv2.imdecode(
+                image_array,
+                cv2.IMREAD_COLOR
+            )
 
-        all_text.append(
-            f"--- Page {page_number + 1} ---\n{text}"
-        )
+            if image is None:
+                continue
 
-    document.close()
+            text = extract_text_from_image(
+                image
+            )
 
-    return "\n\n".join(all_text)
+            all_text.append(
+                f"--- Page {page_number + 1} ---\n{text}"
+            )
+
+    finally:
+
+        document.close()
+
+    return "\n\n".join(
+        all_text
+    )
 
 
-# --------------------------------------------------
-# MAIN FILE PROCESSOR
-# --------------------------------------------------
+# ============================================================
+# MAIN PROCESSOR
+# ============================================================
 
 def process_document(file_path):
-    """
-    Detect file type and perform OCR.
-    """
 
     extension = os.path.splitext(
         file_path
@@ -227,11 +376,15 @@ def process_document(file_path):
 
     if extension in image_extensions:
 
-        return process_image(file_path)
+        return process_image(
+            file_path
+        )
 
     elif extension == ".pdf":
 
-        return process_pdf(file_path)
+        return process_pdf(
+            file_path
+        )
 
     else:
 

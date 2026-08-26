@@ -78,6 +78,180 @@ let latestResult = null;
 
 let latestOCRText = "";
 
+// ============================================================
+// PROGRESS BAR
+// ============================================================
+
+let progressTimer = null;
+
+function showProgress(percent, messageText) {
+
+    let progressContainer =
+        document.getElementById("ocrProgressContainer");
+
+    // Create progress bar if it doesn't already exist
+    if (!progressContainer) {
+
+        progressContainer =
+            document.createElement("div");
+
+        progressContainer.id =
+            "ocrProgressContainer";
+
+        progressContainer.style.width = "100%";
+        progressContainer.style.marginTop = "20px";
+        progressContainer.style.display = "none";
+
+        progressContainer.innerHTML = `
+            <div style="
+                width: 100%;
+                height: 10px;
+                background: #e5e7eb;
+                border-radius: 10px;
+                overflow: hidden;
+            ">
+                <div id="ocrProgressBar" style="
+                    width: 0%;
+                    height: 100%;
+                    background: #159447;
+                    border-radius: 10px;
+                    transition: width 0.5s ease;
+                "></div>
+            </div>
+
+            <div id="ocrProgressText" style="
+                margin-top: 8px;
+                text-align: center;
+                font-size: 14px;
+                color: #687d76;
+            ">
+                Preparing...
+            </div>
+        `;
+
+        if (processBtn && processBtn.parentNode) {
+            processBtn.parentNode.appendChild(
+                progressContainer
+            );
+        }
+    }
+
+    const progressBar =
+        document.getElementById("ocrProgressBar");
+
+    const progressText =
+        document.getElementById("ocrProgressText");
+
+    progressContainer.style.display = "block";
+
+    if (progressBar) {
+        progressBar.style.width =
+            Math.min(100, Math.max(0, percent)) + "%";
+    }
+
+    if (progressText) {
+        progressText.textContent =
+            messageText + " " + percent + "%";
+    }
+}
+
+
+// ============================================================
+// HIDE PROGRESS BAR
+// ============================================================
+
+function hideProgress() {
+
+    if (progressTimer) {
+        clearTimeout(progressTimer);
+        progressTimer = null;
+    }
+
+    const progressContainer =
+        document.getElementById(
+            "ocrProgressContainer"
+        );
+
+    if (progressContainer) {
+        progressContainer.style.display = "none";
+    }
+}
+
+
+// ============================================================
+// START ESTIMATED PROGRESS
+// ============================================================
+
+function startEstimatedProgress() {
+
+    showProgress(
+        10,
+        "Uploading document..."
+    );
+
+    setTimeout(function () {
+
+        showProgress(
+            25,
+            "Preparing document..."
+        );
+
+    }, 500);
+
+    setTimeout(function () {
+
+        showProgress(
+            40,
+            "Running OCR..."
+        );
+
+    }, 1500);
+
+    setTimeout(function () {
+
+        showProgress(
+            55,
+            "Processing OCR text..."
+        );
+
+    }, 4000);
+
+    setTimeout(function () {
+
+        showProgress(
+            65,
+            "Extracting fields..."
+        );
+
+    }, 7000);
+
+    setTimeout(function () {
+
+        showProgress(
+            75,
+            "Classifying document..."
+        );
+
+    }, 10000);
+
+    setTimeout(function () {
+
+        showProgress(
+            85,
+            "Validating extracted data..."
+        );
+
+    }, 13000);
+
+    setTimeout(function () {
+
+        showProgress(
+            90,
+            "Finalizing results..."
+        );
+
+    }, 16000);
+}
 
 // ============================================================
 // STARTUP
@@ -246,11 +420,11 @@ function processSelectedFile(file) {
 
 function clearSelectedFile() {
 
+    hideProgress();
+
     selectedFile = null;
 
-
     if (fileName) {
-
         fileName.textContent =
             "No file selected";
 
@@ -258,12 +432,9 @@ function clearSelectedFile() {
             "#687d76";
     }
 
-
     if (processBtn) {
-
         processBtn.disabled = true;
     }
-
 }
 
 
@@ -398,173 +569,111 @@ async function sendToBackend() {
 
     clearMessage();
 
-
-    // --------------------------------------------------------
-    // UI
-    // --------------------------------------------------------
-
     if (loading) {
-
-        loading.style.display =
-            "block";
+        loading.style.display = "block";
     }
-
 
     if (processBtn) {
-
-        processBtn.disabled =
-            true;
-
-        processBtn.textContent =
-            "Processing...";
+        processBtn.disabled = true;
+        processBtn.textContent = "Processing...";
     }
-
 
     if (results) {
-
-        results.style.display =
-            "none";
+        results.style.display = "none";
     }
 
+    startEstimatedProgress();
 
     try {
 
-        console.log(
-            "===================================="
-        );
+        const formData = new FormData();
 
-        console.log(
-            "Sending file to backend"
-        );
-
-        console.log(
-            "API:",
-            API_URL
-        );
-
-        console.log(
-            "File:",
-            selectedFile.name
-        );
-
-        console.log(
-            "===================================="
-        );
-
-
-        // ----------------------------------------------------
-        // FORM DATA
-        // ----------------------------------------------------
-
-        const formData =
-            new FormData();
-
-
-        // IMPORTANT:
-        // FastAPI endpoint expects "file"
         formData.append(
             "file",
             selectedFile,
             selectedFile.name
         );
 
-
-        // ----------------------------------------------------
-        // FETCH
-        // ----------------------------------------------------
-
-        const response =
-            await fetch(
-                API_URL,
-                {
-                    method: "POST",
-                    body: formData
-                }
-            );
-
-
-        console.log(
-            "Backend response status:",
-            response.status
+        showProgress(
+            15,
+            "Uploading document..."
         );
 
+        await new Promise(
+            resolve => setTimeout(resolve, 300)
+        );
 
-        // ----------------------------------------------------
-        // READ RESPONSE
-        // ----------------------------------------------------
+        showProgress(
+            35,
+            "Running OCR..."
+        );
+
+        const response = await fetch(
+            API_URL,
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+        showProgress(
+            70,
+            "Extracting fields..."
+        );
 
         const responseText =
             await response.text();
 
-
-        console.log(
-            "Raw backend response:",
-            responseText
-        );
-
-
         let data;
 
-
         try {
-
-            data =
-                JSON.parse(
-                    responseText
-                );
-
+            data = JSON.parse(responseText);
         }
-        catch (jsonError) {
-
+        catch (error) {
             throw new Error(
                 "Backend did not return valid JSON."
             );
-
         }
 
-
-        console.log(
-            "Parsed backend result:",
-            data
-        );
-
-
-        // ----------------------------------------------------
-        // BACKEND ERROR
-        // ----------------------------------------------------
-
         if (!response.ok) {
-
             throw new Error(
                 data.detail ||
                 data.message ||
                 "Document processing failed."
             );
-
         }
 
-
-        // ----------------------------------------------------
-        // SAVE RESULT
-        // ----------------------------------------------------
-
-        latestResult =
-            data;
-
-
-        // ----------------------------------------------------
-        // SHOW RESULT
-        // ----------------------------------------------------
-
-        showResults(
-            data
+        showProgress(
+            85,
+            "Validating extracted data..."
         );
 
+        await new Promise(
+            resolve => setTimeout(resolve, 300)
+        );
+
+        showProgress(
+            95,
+            "Finalizing results..."
+        );
+
+        latestResult = data;
+
+        showProgress(
+            100,
+            "Processing completed"
+        );
+
+        showResults(data);
 
         showSuccess(
             "Document processed successfully."
         );
 
+        progressTimer = setTimeout(
+            hideProgress,
+            3000
+        );
 
     }
     catch (error) {
@@ -574,35 +683,35 @@ async function sendToBackend() {
             error
         );
 
-
         showError(
             "Backend connection failed: " +
             error.message
+        );
+
+        progressTimer = setTimeout(
+            hideProgress,
+            3000
         );
 
     }
     finally {
 
         if (loading) {
-
-            loading.style.display =
-                "none";
+            loading.style.display = "none";
         }
 
-
         if (processBtn) {
-
             processBtn.disabled =
                 selectedFile === null;
 
             processBtn.textContent =
                 "Process Document";
         }
-
     }
-
 }
 
+
+    
 
 // ============================================================
 // SHOW RESULTS

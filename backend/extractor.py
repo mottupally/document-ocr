@@ -6,32 +6,26 @@ import re
 # ==========================================================
 
 def clean_text(text):
-    """
-    Clean OCR output while keeping useful line structure.
-    """
-
     if not text:
         return ""
 
-    lines = text.splitlines()
+    lines = []
 
-    cleaned_lines = []
-
-    for line in lines:
+    for line in text.splitlines():
 
         line = line.strip()
 
-        # Normalize repeated spaces
+        # Normalize spaces
         line = re.sub(r"[ \t]+", " ", line)
 
         if line:
-            cleaned_lines.append(line)
+            lines.append(line)
 
-    return "\n".join(cleaned_lines)
+    return "\n".join(lines)
 
 
 # ==========================================================
-# NORMALIZE OCR VALUE
+# NORMALIZE VALUE
 # ==========================================================
 
 def normalize_value(value):
@@ -47,7 +41,42 @@ def normalize_value(value):
         value
     )
 
-    return value.strip()
+    # Remove obvious punctuation at the beginning/end
+    value = value.strip(" :-#|")
+
+    if not value:
+        return None
+
+    return value
+
+
+# ==========================================================
+# CHECK WHETHER VALUE IS USEFUL
+# ==========================================================
+
+def valid_value(value, min_length=2):
+
+    if not value:
+        return False
+
+    value = normalize_value(value)
+
+    if not value:
+        return False
+
+    if len(value) < min_length:
+        return False
+
+    # Reject values consisting almost entirely of punctuation
+    alphanumeric_count = sum(
+        c.isalnum()
+        for c in value
+    )
+
+    if alphanumeric_count < 2:
+        return False
+
+    return True
 
 
 # ==========================================================
@@ -56,63 +85,136 @@ def normalize_value(value):
 
 def find_value(text, labels):
 
-    for label in labels:
+    lines = text.splitlines()
 
-        pattern = (
-            rf"(?:^|\n)\s*"
-            rf"{label}"
-            rf"\s*[:#\-]?\s*"
-            rf"([^\n]+)"
-        )
+    for index, line in enumerate(lines):
 
-        match = re.search(
-            pattern,
-            text,
-            re.IGNORECASE
-        )
+        line_clean = line.strip()
 
-        if match:
+        for label in labels:
 
-            value = normalize_value(
-                match.group(1)
+            # ------------------------------------------------
+            # Case 1:
+            # Label: Value
+            # ------------------------------------------------
+
+            pattern = (
+                rf"^\s*{label}"
+                rf"\s*(?:[:#\-]+)\s*"
+                rf"(.+?)\s*$"
             )
 
-            if value:
-                return value
+            match = re.match(
+                pattern,
+                line_clean,
+                re.IGNORECASE
+            )
+
+            if match:
+
+                value = normalize_value(
+                    match.group(1)
+                )
+
+                if valid_value(value):
+                    return value
+
+            # ------------------------------------------------
+            # Case 2:
+            # Label Value
+            # ------------------------------------------------
+
+            pattern = (
+                rf"^\s*{label}"
+                rf"\s+(.+?)\s*$"
+            )
+
+            match = re.match(
+                pattern,
+                line_clean,
+                re.IGNORECASE
+            )
+
+            if match:
+
+                value = normalize_value(
+                    match.group(1)
+                )
+
+                if valid_value(value):
+
+                    # Don't accept another label as value
+                    if not looks_like_label(value):
+                        return value
+
+        # ----------------------------------------------------
+        # Case 3:
+        # Label alone -> next line is value
+        # ----------------------------------------------------
+
+        for label in labels:
+
+            if re.fullmatch(
+                label,
+                line_clean,
+                re.IGNORECASE
+            ):
+
+                if index + 1 < len(lines):
+
+                    next_line = normalize_value(
+                        lines[index + 1]
+                    )
+
+                    if (
+                        valid_value(next_line)
+                        and not looks_like_label(next_line)
+                    ):
+                        return next_line
 
     return None
 
 
 # ==========================================================
-# FIND VALUE ANYWHERE AFTER LABEL
+# LABEL CHECK
 # ==========================================================
 
-def find_value_anywhere(text, labels):
+def looks_like_label(value):
 
-    for label in labels:
+    if not value:
+        return False
 
-        pattern = (
-            rf"{label}"
-            rf"\s*[:#\-]?\s*"
-            rf"([A-Za-z0-9][^\n]*)"
-        )
+    labels = [
+        "vehicle",
+        "vehicle no",
+        "vehicle number",
+        "customer",
+        "customer name",
+        "consignee",
+        "consignor",
+        "origin",
+        "source",
+        "destination",
+        "from",
+        "to",
+        "lr",
+        "lr no",
+        "delivery",
+        "gate out",
+        "weight",
+        "invoice",
+        "invoice no",
+        "amount",
+        "date",
+        "name",
+        "company",
+        "phone",
+        "email",
+        "eway",
+        "e-way bill"
+    ]
 
-        match = re.search(
-            pattern,
-            text,
-            re.IGNORECASE
-        )
-
-        if match:
-
-            value = normalize_value(
-                match.group(1)
-            )
-
-            if value:
-                return value
-
-    return None
+    return value.strip().lower() in labels
 
 
 # ==========================================================
@@ -127,7 +229,7 @@ def extract_vehicle(text):
         r"registration\s*(?:no|number)?",
         r"reg(?:istration)?\s*(?:no|number)?",
         r"truck\s*(?:no|number)?",
-        r"truck"
+        r"lorry\s*(?:no|number)?"
     ]
 
     value = find_value(
@@ -136,9 +238,29 @@ def extract_vehicle(text):
     )
 
     if value:
-        return value
 
-    # Common Indian vehicle-number pattern
+        # Only accept something that looks like a
+        # vehicle registration number
+        cleaned = re.sub(
+            r"[^A-Za-z0-9]",
+            "",
+            value.upper()
+        )
+
+        pattern = (
+            r"^[A-Z]{2}"
+            r"\d{1,2}"
+            r"[A-Z]{1,3}"
+            r"\d{3,4}$"
+        )
+
+        if re.match(
+            pattern,
+            cleaned
+        ):
+            return value
+
+    # Fallback search
     pattern = (
         r"\b[A-Z]{2}"
         r"[\s\-]?"
@@ -168,13 +290,10 @@ def extract_customer(text):
 
     labels = [
         r"customer\s*name",
-        r"customer",
         r"consignee\s*name",
         r"consignee",
         r"client\s*name",
-        r"client",
-        r"party\s*name",
-        r"party"
+        r"party\s*name"
     ]
 
     return find_value(
@@ -190,10 +309,9 @@ def extract_customer(text):
 def extract_lr(text):
 
     labels = [
-        r"lr\s*(?:no|number)?",
         r"l\.r\.\s*(?:no|number)?",
-        r"lorry\s*receipt\s*(?:no|number)?",
-        r"lr"
+        r"lr\s*(?:no|number|#)",
+        r"lorry\s*receipt\s*(?:no|number)?"
     ]
 
     return find_value(
@@ -209,11 +327,9 @@ def extract_lr(text):
 def extract_delivery(text):
 
     labels = [
-        r"delivery\s*(?:no|number)?",
-        r"delivery\s*number",
-        r"delivery",
-        r"del\.\s*(?:no|number)?",
-        r"delivery\s*document"
+        r"delivery\s*(?:no|number|#)",
+        r"delivery\s*document",
+        r"del\.\s*(?:no|number)"
     ]
 
     return find_value(
@@ -231,10 +347,10 @@ def extract_origin(text):
     labels = [
         r"origin",
         r"source",
-        r"from",
         r"dispatch\s*from",
         r"pickup\s*location",
-        r"loading\s*location"
+        r"loading\s*location",
+        r"consignor\s*location"
     ]
 
     return find_value(
@@ -251,7 +367,6 @@ def extract_destination(text):
 
     labels = [
         r"destination",
-        r"to",
         r"consignee\s*location",
         r"delivery\s*location",
         r"unloading\s*location"
@@ -272,44 +387,14 @@ def extract_gate_out(text):
     labels = [
         r"gate[\s\-]*out",
         r"gateout",
-        r"gate\s*out\s*time",
         r"gate\s*exit",
         r"gate\s*exit\s*time"
     ]
 
-    value = find_value(
+    return find_value(
         text,
         labels
     )
-
-    if value:
-        return value
-
-    # Date + time fallback
-    patterns = [
-
-        r"\b\d{1,2}[./\-]\d{1,2}[./\-]\d{2,4}"
-        r"\s+\d{1,2}:\d{2}(?::\d{2})?\b",
-
-        r"\b\d{4}[./\-]\d{1,2}[./\-]\d{1,2}"
-        r"\s+\d{1,2}:\d{2}(?::\d{2})?\b",
-
-        r"\b\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}"
-        r"\s+\d{1,2}:\d{2}(?::\d{2})?\b"
-    ]
-
-    for pattern in patterns:
-
-        match = re.search(
-            pattern,
-            text,
-            re.IGNORECASE
-        )
-
-        if match:
-            return match.group(0)
-
-    return None
 
 
 # ==========================================================
@@ -319,12 +404,10 @@ def extract_gate_out(text):
 def extract_weight(text):
 
     labels = [
-        r"weight",
         r"gross\s*weight",
         r"net\s*weight",
-        r"vehicle\s*weight",
-        r"weight\s*\(kg\)",
-        r"weight\s*kg"
+        r"weight",
+        r"vehicle\s*weight"
     ]
 
     value = find_value(
@@ -342,26 +425,6 @@ def extract_weight(text):
         if match:
             return match.group(0)
 
-    # Weight followed by KG
-    pattern = (
-        r"\b[\d,]+(?:\.\d+)?\s*kg\b"
-    )
-
-    match = re.search(
-        pattern,
-        text,
-        re.IGNORECASE
-    )
-
-    if match:
-
-        return re.sub(
-            r"\s*kg",
-            "",
-            match.group(0),
-            flags=re.IGNORECASE
-        ).strip()
-
     return None
 
 
@@ -372,8 +435,7 @@ def extract_weight(text):
 def extract_invoice(text):
 
     labels = [
-        r"invoice\s*(?:no|number|#)?",
-        r"invoice"
+        r"invoice\s*(?:no|number|#)"
     ]
 
     return find_value(
@@ -390,9 +452,7 @@ def extract_eway_bill(text):
 
     labels = [
         r"e[\s\-]*way\s*bill\s*(?:no|number|#)?",
-        r"eway\s*bill\s*(?:no|number|#)?",
-        r"e[\s\-]*way\s*(?:no|number)?",
-        r"eway"
+        r"eway\s*bill\s*(?:no|number|#)?"
     ]
 
     return find_value(
@@ -482,25 +542,35 @@ def extract_amount(text):
 
     patterns = [
 
+        # Rs 1,500
         r"(?:₹|Rs\.?|INR)"
-        r"\s*[\d,]+(?:\.\d{1,2})?",
+        r"\s*"
+        r"[\d,]+(?:\.\d{1,2})?",
 
-        r"(?:Total|Amount|Grand Total)"
+        # Total: 1,500
+        r"(?:Grand\s*Total|Total\s*Amount|Total|Amount)"
         r"\s*[:\-]?\s*"
         r"(?:₹|Rs\.?|INR)?"
-        r"\s*[\d,]+(?:\.\d{1,2})?"
+        r"\s*"
+        r"[\d,]+(?:\.\d{1,2})?"
     ]
+
+    matches = []
 
     for pattern in patterns:
 
-        matches = re.findall(
+        found = re.findall(
             pattern,
             text,
             re.IGNORECASE
         )
 
-        if matches:
-            return matches[-1].strip()
+        matches.extend(found)
+
+    if matches:
+
+        # Return the last amount found
+        return matches[-1].strip()
 
     return None
 
@@ -512,38 +582,18 @@ def extract_amount(text):
 def extract_document_number(text):
 
     labels = [
-
-        r"invoice\s*(?:no|number)",
-
-        r"receipt\s*(?:no|number)",
-
-        r"bill\s*(?:no|number)",
-
-        r"slip\s*(?:no|number)",
-
-        r"reference\s*(?:no|number)",
-
-        r"ref\s*(?:no|number)"
+        r"invoice\s*(?:no|number|#)",
+        r"receipt\s*(?:no|number|#)",
+        r"bill\s*(?:no|number|#)",
+        r"slip\s*(?:no|number|#)",
+        r"reference\s*(?:no|number|#)",
+        r"ref\s*(?:no|number|#)"
     ]
 
-    for label in labels:
-
-        pattern = (
-            rf"{label}"
-            rf"\s*[:#\-]?\s*"
-            rf"([A-Za-z0-9\/\-_]+)"
-        )
-
-        match = re.search(
-            pattern,
-            text,
-            re.IGNORECASE
-        )
-
-        if match:
-            return match.group(1)
-
-    return None
+    return find_value(
+        text,
+        labels
+    )
 
 
 # ==========================================================
@@ -553,16 +603,10 @@ def extract_document_number(text):
 def extract_name(text):
 
     labels = [
-
         r"customer\s*name",
-
         r"client\s*name",
-
         r"consignee\s*name",
-
-        r"consignor\s*name",
-
-        r"name"
+        r"consignor\s*name"
     ]
 
     return find_value(
@@ -576,221 +620,27 @@ def extract_name(text):
 # ==========================================================
 
 def extract_company(text):
-    """
-    Extract company/organization name.
 
-    Priority:
-    1. Consignor Name
-    2. Consignor
-    3. Company Name
-    4. Company
-    5. Business Name
-    6. Organization
-    7. Shipper Name
-    8. Shipper
-
-    Avoids returning OCR noise such as:
-    Page 1
-    Page 2
-    Page 1 of 3
-    etc.
-    """
-
-    # ------------------------------------------------------
-    # IMPORTANT:
-    # Consignor Name is checked FIRST.
-    # For your document:
-    #
-    # Consignor Name: Tata Steel
-    #
-    # company = Tata Steel
-    # ------------------------------------------------------
-
-    priority_labels = [
-
-        r"consignor\s*name",
-
-        r"consignor",
-
+    labels = [
         r"company\s*name",
-
-        r"company",
-
         r"business\s*name",
-
         r"organization\s*name",
-
         r"organisation\s*name",
-
-        r"organization",
-
-        r"organisation",
-
+        r"consignor\s*name",
         r"shipper\s*name",
-
-        r"shipper",
-
-        r"seller\s*name",
-
-        r"seller"
+        r"seller\s*name"
     ]
 
-    # ------------------------------------------------------
-    # FIRST PASS:
-    # Look for values on the same line as the label.
-    # ------------------------------------------------------
-
-    company = find_value(
+    value = find_value(
         text,
-        priority_labels
+        labels
     )
 
-    if company and not is_invalid_company_value(company):
-        return company
+    if value:
+        return value
 
-    # ------------------------------------------------------
-    # SECOND PASS:
-    # Sometimes OCR puts the value on the next line.
-    #
-    # Example:
-    #
-    # Consignor Name:
-    # Tata Steel
-    #
-    # ------------------------------------------------------
-
-    lines = text.splitlines()
-
-    for index, line in enumerate(lines):
-
-        normalized_line = line.strip()
-
-        for label in priority_labels:
-
-            label_pattern = (
-                rf"^\s*{label}"
-                rf"\s*[:#\-]?\s*$"
-            )
-
-            if re.match(
-                label_pattern,
-                normalized_line,
-                re.IGNORECASE
-            ):
-
-                # Check next few lines
-                for next_index in range(
-                    index + 1,
-                    min(index + 3, len(lines))
-                ):
-
-                    candidate = normalize_value(
-                        lines[next_index]
-                    )
-
-                    if (
-                        candidate
-                        and not is_invalid_company_value(
-                            candidate
-                        )
-                    ):
-
-                        return candidate
-
-    # ------------------------------------------------------
-    # DO NOT blindly return the first OCR line.
-    #
-    # The old code was doing:
-    #
-    # return line
-    #
-    # which could return "Page 1".
-    # ------------------------------------------------------
-
+    # Do NOT guess a company from random OCR text.
     return None
-
-
-# ==========================================================
-# INVALID COMPANY VALUE CHECK
-# ==========================================================
-
-def is_invalid_company_value(value):
-
-    if not value:
-        return True
-
-    value = normalize_value(value)
-
-    if not value:
-        return True
-
-    lower_value = value.lower()
-
-    # ------------------------------------------------------
-    # Page numbers
-    # ------------------------------------------------------
-
-    page_patterns = [
-
-        r"^page\s*\d+$",
-
-        r"^page\s*\d+\s*of\s*\d+$",
-
-        r"^p\.?\s*\d+$",
-
-        r"^\d+\s*/\s*\d+$"
-    ]
-
-    for pattern in page_patterns:
-
-        if re.match(
-            pattern,
-            lower_value,
-            re.IGNORECASE
-        ):
-            return True
-
-    # ------------------------------------------------------
-    # Common OCR metadata
-    # ------------------------------------------------------
-
-    invalid_values = {
-
-        "page",
-
-        "page no",
-
-        "page number",
-
-        "document",
-
-        "document page",
-
-        "continued",
-
-        "total",
-
-        "date",
-
-        "name",
-
-        "company",
-
-        "company name",
-
-        "consignor",
-
-        "consignor name",
-
-        "shipper",
-
-        "shipper name"
-    }
-
-    if lower_value in invalid_values:
-        return True
-
-    return False
 
 
 # ==========================================================
@@ -801,28 +651,144 @@ def detect_document_type(text):
 
     lower_text = text.lower()
 
-    if "invoice" in lower_text:
-        return "Invoice"
+    scores = {
+        "Invoice": 0,
+        "Receipt": 0,
+        "Bill": 0,
+        "Salary Document": 0,
+        "Certificate": 0,
+        "Statement": 0,
+        "Business Slip": 0,
+        "Advertisement / Brochure": 0,
+        "Fleet Management Document": 0
+    }
 
-    if "receipt" in lower_text:
-        return "Receipt"
+    # Invoice
+    invoice_patterns = [
+        r"\btax\s+invoice\b",
+        r"\binvoice\s+(?:no|number)\b",
+        r"\binvoice\s*#",
+        r"\bsubtotal\b",
+        r"\bgrand\s+total\b",
+        r"\bgst(?:in)?\b",
+        r"\bhsn\b"
+    ]
 
-    if "bill" in lower_text:
-        return "Bill"
+    for pattern in invoice_patterns:
 
-    if "salary" in lower_text:
-        return "Salary Document"
+        if re.search(
+            pattern,
+            lower_text
+        ):
+            scores["Invoice"] += 2
 
-    if "certificate" in lower_text:
-        return "Certificate"
+    # Receipt
+    receipt_patterns = [
+        r"\breceipt\s+(?:no|number)\b",
+        r"\bpayment\s+received\b",
+        r"\bpaid\b"
+    ]
 
-    if "statement" in lower_text:
-        return "Statement"
+    for pattern in receipt_patterns:
 
-    if "slip" in lower_text:
-        return "Business Slip"
+        if re.search(
+            pattern,
+            lower_text
+        ):
+            scores["Receipt"] += 2
 
-    return "Business Document"
+    # Bill
+    if re.search(
+        r"\bbill\s+(?:no|number)\b",
+        lower_text
+    ):
+        scores["Bill"] += 2
+
+    # Salary
+    if re.search(
+        r"\bsalary\b|\bpayslip\b|\bpay\s+slip\b",
+        lower_text
+    ):
+        scores["Salary Document"] += 5
+
+    # Certificate
+    if re.search(
+        r"\bcertificate\b|\bcertified\b",
+        lower_text
+    ):
+        scores["Certificate"] += 5
+
+    # Statement
+    if re.search(
+        r"\baccount\s+statement\b|\bstatement\b",
+        lower_text
+    ):
+        scores["Statement"] += 4
+
+    # Fleet
+    fleet_patterns = [
+        r"\bfleet\s+management\b",
+        r"\bvehicle\s+management\b",
+        r"\btrip[\s-]*level\b",
+        r"\bdiesel\s+theft\b",
+        r"\btyre\s+exchange\b",
+        r"\bmoveos\b"
+    ]
+
+    fleet_hits = sum(
+        bool(re.search(
+            pattern,
+            lower_text
+        ))
+        for pattern in fleet_patterns
+    )
+
+    if fleet_hits >= 2:
+
+        scores[
+            "Fleet Management Document"
+        ] += fleet_hits * 2
+
+    best_type = max(
+        scores,
+        key=scores.get
+    )
+
+    # Require a meaningful score
+    if scores[best_type] < 2:
+        return "Business Document"
+
+    return best_type
+
+
+# ==========================================================
+# WEBSITE
+# ==========================================================
+
+def extract_website(text):
+
+    pattern = (
+        r"\b(?:https?://)?"
+        r"(?:www\.)?"
+        r"[A-Za-z0-9][A-Za-z0-9.-]*"
+        r"\.[A-Za-z]{2,}"
+    )
+
+    matches = re.findall(
+        pattern,
+        text
+    )
+
+    for value in matches:
+
+        value = value.strip(
+            ".,;:()[]{}"
+        )
+
+        if "." in value:
+            return value
+
+    return None
 
 
 # ==========================================================
@@ -831,85 +797,72 @@ def detect_document_type(text):
 
 def extract_fields(text):
 
-    cleaned = clean_text(text)
+    cleaned = clean_text(
+        text
+    )
+
+    if not cleaned:
+        return {}
+
+    document_type = detect_document_type(
+        cleaned
+    )
 
     fields = {
-
-        # --------------------------------------------------
-        # Logistics fields
-        # --------------------------------------------------
-
-        "vehicle":
-            extract_vehicle(cleaned),
-
-        "customer":
-            extract_customer(cleaned),
-
-        "lr":
-            extract_lr(cleaned),
-
-        "delivery":
-            extract_delivery(cleaned),
-
-        "origin":
-            extract_origin(cleaned),
-
-        "destination":
-            extract_destination(cleaned),
-
-        "gateOut":
-            extract_gate_out(cleaned),
-
-        "weight":
-            extract_weight(cleaned),
-
-        "invoice":
-            extract_invoice(cleaned),
-
-        "ewayBill":
-            extract_eway_bill(cleaned),
-
-        # --------------------------------------------------
-        # Generic fields
-        # --------------------------------------------------
-
-        "document_type":
-            detect_document_type(cleaned),
-
-        "company":
-            extract_company(cleaned),
-
-        "name":
-            extract_name(cleaned),
-
-        "document_number":
-            extract_document_number(cleaned),
-
-        "date":
-            extract_date(cleaned),
-
-        "amount":
-            extract_amount(cleaned),
-
-        "phone":
-            extract_phone(cleaned),
-
-        "email":
-            extract_email(cleaned)
+        "document_type": document_type,
+        "company": extract_company(cleaned),
+        "name": extract_name(cleaned),
+        "document_number": extract_document_number(cleaned),
+        "date": extract_date(cleaned),
+        "amount": extract_amount(cleaned),
+        "phone": extract_phone(cleaned),
+        "email": extract_email(cleaned)
     }
 
     # ------------------------------------------------------
-    # REMOVE EMPTY VALUES
+    # Logistics fields
     # ------------------------------------------------------
 
-    fields = {
+    logistics_signal = re.search(
+        r"\bvehicle\b|"
+        r"\btruck\b|"
+        r"\blorry\b|"
+        r"\blr\b|"
+        r"\bconsignor\b|"
+        r"\bconsignee\b|"
+        r"\borigin\b|"
+        r"\bdestination\b|"
+        r"\bgate[\s-]*out\b|"
+        r"\be[\s-]*way\b|"
+        r"\bdelivery\b|"
+        r"\bdispatch\b|"
+        r"\bweight\b",
+        cleaned,
+        re.IGNORECASE
+    )
 
+    if logistics_signal:
+
+        fields.update({
+            "vehicle": extract_vehicle(cleaned),
+            "customer": extract_customer(cleaned),
+            "lr": extract_lr(cleaned),
+            "delivery": extract_delivery(cleaned),
+            "origin": extract_origin(cleaned),
+            "destination": extract_destination(cleaned),
+            "gateOut": extract_gate_out(cleaned),
+            "weight": extract_weight(cleaned),
+            "invoice": extract_invoice(cleaned),
+            "ewayBill": extract_eway_bill(cleaned)
+        })
+
+    # ------------------------------------------------------
+    # Remove empty fields
+    # ------------------------------------------------------
+
+    return {
         key: value
-
         for key, value in fields.items()
-
         if value is not None
         and str(value).strip() != ""
     }
-
-    return fields
