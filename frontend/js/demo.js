@@ -9,7 +9,7 @@
 // ============================================================
 
 // LOCAL BACKEND
-const API_URL = "https://document-ocr-zthu.onrender.com/api/ocr";
+const API_URL =   "https://document-ocr-zthu.onrender.com/api/ocr";
 
 // WHEN DEPLOYING TO RENDER, CHANGE TO:
 // const API_URL = "https://YOUR-BACKEND.onrender.com/api/ocr";
@@ -564,7 +564,6 @@ if (processBtn) {
 // ============================================================
 // SEND FILE TO BACKEND
 // ============================================================
-
 async function sendToBackend() {
 
     clearMessage();
@@ -586,6 +585,12 @@ async function sendToBackend() {
 
     try {
 
+        console.log("====================================");
+        console.log("Sending file to backend...");
+        console.log("API URL:", API_URL);
+        console.log("File:", selectedFile.name);
+        console.log("====================================");
+
         const formData = new FormData();
 
         formData.append(
@@ -595,103 +600,195 @@ async function sendToBackend() {
         );
 
         showProgress(
-            15,
+            20,
             "Uploading document..."
         );
 
-        await new Promise(
-            resolve => setTimeout(resolve, 300)
-        );
+        // ----------------------------------------------------
+        // 120 SECOND TIMEOUT
+        // ----------------------------------------------------
+
+        const controller = new AbortController();
+
+        const timeout = setTimeout(function () {
+
+            controller.abort();
+
+        }, 120000);
+
 
         showProgress(
-            35,
+            40,
             "Running OCR..."
         );
+
 
         const response = await fetch(
             API_URL,
             {
                 method: "POST",
-                body: formData
+                body: formData,
+                signal: controller.signal
             }
         );
+
+
+        clearTimeout(timeout);
+
+
+        console.log(
+            "Backend response received."
+        );
+
+        console.log(
+            "HTTP status:",
+            response.status
+        );
+
+
+        if (!response.ok) {
+
+            let errorMessage =
+                "Document processing failed.";
+
+            try {
+
+                const errorData =
+                    await response.json();
+
+                errorMessage =
+                    errorData.detail ||
+                    errorData.message ||
+                    errorMessage;
+
+            }
+            catch (error) {
+
+                console.error(
+                    "Could not read error response:",
+                    error
+                );
+
+            }
+
+            throw new Error(
+                errorMessage
+            );
+        }
+
 
         showProgress(
             70,
             "Extracting fields..."
         );
 
-        const responseText =
-            await response.text();
 
-        let data;
+        // ----------------------------------------------------
+        // READ JSON RESPONSE DIRECTLY
+        // ----------------------------------------------------
 
-        try {
-            data = JSON.parse(responseText);
-        }
-        catch (error) {
-            throw new Error(
-                "Backend did not return valid JSON."
-            );
-        }
+        const data =
+            await response.json();
 
-        if (!response.ok) {
-            throw new Error(
-                data.detail ||
-                data.message ||
-                "Document processing failed."
-            );
-        }
+
+        console.log(
+            "OCR RESPONSE:",
+            data
+        );
+
 
         showProgress(
             85,
             "Validating extracted data..."
         );
 
+
         await new Promise(
-            resolve => setTimeout(resolve, 300)
+            resolve => setTimeout(
+                resolve,
+                300
+            )
         );
+
+
+        latestResult =
+            data;
+
 
         showProgress(
             95,
             "Finalizing results..."
         );
 
-        latestResult = data;
+
+        showResults(
+            data
+        );
+
 
         showProgress(
             100,
             "Processing completed"
         );
 
-        showResults(data);
 
         showSuccess(
             "Document processed successfully."
         );
 
-        progressTimer = setTimeout(
-            hideProgress,
-            3000
+
+        console.log(
+            "OCR processing completed successfully."
         );
+
+
+        progressTimer =
+            setTimeout(
+                hideProgress,
+                3000
+            );
 
     }
     catch (error) {
+
+        console.error(
+            "===================================="
+        );
 
         console.error(
             "OCR ERROR:",
             error
         );
 
-        showError(
-            "Backend connection failed: " +
-            error.message
+        console.error(
+            "===================================="
         );
 
-        progressTimer = setTimeout(
-            hideProgress,
-            3000
-        );
+
+        if (
+            error.name === "AbortError"
+        ) {
+
+            showError(
+                "OCR processing timed out. The Render backend took more than 120 seconds."
+            );
+
+        }
+        else {
+
+            showError(
+                "Backend connection failed: " +
+                error.message
+            );
+
+        }
+
+
+        progressTimer =
+            setTimeout(
+                hideProgress,
+                3000
+            );
 
     }
     finally {
@@ -701,13 +798,16 @@ async function sendToBackend() {
         }
 
         if (processBtn) {
+
             processBtn.disabled =
                 selectedFile === null;
 
             processBtn.textContent =
                 "Process Document";
         }
+
     }
+
 }
 
 
