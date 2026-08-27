@@ -18,6 +18,7 @@ if os.name == "nt":
 
 else:
 
+    # Render / Linux
     pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
 
@@ -37,12 +38,12 @@ def preprocess_image(image):
     )
 
     # --------------------------------------------------------
-    # Resize image
+    # Resize only when necessary
     # --------------------------------------------------------
 
     height, width = gray.shape
 
-    target_width = 1800
+    target_width = 1600
 
     if width < target_width:
 
@@ -71,35 +72,20 @@ def preprocess_image(image):
 
 
 # ============================================================
-# THRESHOLD VERSION
-# ============================================================
-
-def create_threshold_image(gray):
-
-    threshold = cv2.adaptiveThreshold(
-        gray,
-        255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY,
-        31,
-        11
-    )
-
-    return threshold
-
-
-# ============================================================
 # DESKEW
 # ============================================================
 
 def deskew_image(image):
+
+    if image is None:
+        return image
 
     gray = cv2.cvtColor(
         image,
         cv2.COLOR_BGR2GRAY
     )
 
-    # Use threshold only for detecting text angle
+    # Small processing only for angle detection
     _, binary = cv2.threshold(
         gray,
         0,
@@ -115,7 +101,9 @@ def deskew_image(image):
 
         return image
 
-    angle = cv2.minAreaRect(coords)[-1]
+    angle = cv2.minAreaRect(
+        coords
+    )[-1]
 
     if angle < -45:
 
@@ -155,45 +143,6 @@ def deskew_image(image):
 
 
 # ============================================================
-# OCR QUALITY CHECK
-# ============================================================
-
-def ocr_score(text):
-
-    if not text:
-        return 0
-
-    # Remove whitespace
-    characters = [
-        c for c in text
-        if not c.isspace()
-    ]
-
-    if not characters:
-        return 0
-
-    # Number of useful alphanumeric characters
-    useful = sum(
-        c.isalnum()
-        for c in characters
-    )
-
-    # Number of lines containing text
-    lines = [
-        line.strip()
-        for line in text.splitlines()
-        if line.strip()
-    ]
-
-    score = (
-        useful
-        + (len(lines) * 10)
-    )
-
-    return score
-
-
-# ============================================================
 # OCR IMAGE
 # ============================================================
 
@@ -206,10 +155,12 @@ def extract_text_from_image(image):
         )
 
     # --------------------------------------------------------
-    # Deskew first
+    # Deskew
     # --------------------------------------------------------
 
-    image = deskew_image(image)
+    image = deskew_image(
+        image
+    )
 
     # --------------------------------------------------------
     # Preprocess
@@ -220,56 +171,22 @@ def extract_text_from_image(image):
     )
 
     # --------------------------------------------------------
-    # Create second OCR version
+    # SINGLE OCR PASS
     # --------------------------------------------------------
+    #
+    # IMPORTANT:
+    # Previously your code ran Tesseract 3 times.
+    # That made Render very slow.
+    #
+    # We now run it only once.
+    #
 
-    threshold = create_threshold_image(
-        processed
-    )
-
-    # --------------------------------------------------------
-    # OCR VERSION 1
-    # --------------------------------------------------------
-
-    text_normal = pytesseract.image_to_string(
+    text = pytesseract.image_to_string(
         processed,
         config="--oem 3 --psm 6"
     )
 
-    # --------------------------------------------------------
-    # OCR VERSION 2
-    # --------------------------------------------------------
-
-    text_threshold = pytesseract.image_to_string(
-        threshold,
-        config="--oem 3 --psm 6"
-    )
-
-    # --------------------------------------------------------
-    # OCR VERSION 3
-    # --------------------------------------------------------
-
-    text_auto = pytesseract.image_to_string(
-        processed,
-        config="--oem 3 --psm 3"
-    )
-
-    # --------------------------------------------------------
-    # Select best OCR result
-    # --------------------------------------------------------
-
-    results = [
-        text_normal,
-        text_threshold,
-        text_auto
-    ]
-
-    best_text = max(
-        results,
-        key=ocr_score
-    )
-
-    return best_text.strip()
+    return text.strip()
 
 
 # ============================================================
@@ -315,9 +232,16 @@ def process_pdf(file_path):
                 page_number
             ]
 
-            # Render PDF at higher resolution
+            # ------------------------------------------------
+            # Render PDF at moderate resolution
+            # ------------------------------------------------
+            #
+            # 3x was expensive on Render.
+            # 2x is usually sufficient for OCR.
+            #
+
             pixmap = page.get_pixmap(
-                matrix=fitz.Matrix(3, 3),
+                matrix=fitz.Matrix(2, 2),
                 alpha=False
             )
 
@@ -336,6 +260,7 @@ def process_pdf(file_path):
             )
 
             if image is None:
+
                 continue
 
             text = extract_text_from_image(

@@ -301,19 +301,35 @@ async def process_uploaded_document(
         # OCR
         # ====================================================
 
-        extracted_text = process_document(
-            file_path
-        )
+        
 
         print("\n================ OCR TEXT ================\n")
-        print(extracted_text)
+        print("FILE RECEIVED:", file.filename)
+        print("STARTING OCR...")
         print("\n===========================================\n")
 
         # ====================================================
         # FIELD EXTRACTION
         # ====================================================
 
-        fields = extract_fields(
+        
+        extracted_text = await run_in_threadpool(
+            process_document,
+            file_path
+        )
+
+        print("\n============== EXTRACTED FIELDS ==============\n")
+        print(extracted_text)
+        print("\n===============================================\n")
+        
+        # ====================================================
+        # FIELD EXTRACTION
+        # ====================================================
+
+        print("Starting field extraction...")
+
+        fields = await run_in_threadpool(
+            extract_fields,
             extracted_text
         )
 
@@ -326,7 +342,7 @@ async def process_uploaded_document(
         # ====================================================
 
         validation = validate_fields(
-            fields
+            
         )
 
         # ====================================================
@@ -334,7 +350,6 @@ async def process_uploaded_document(
         # ====================================================
 
         matching = create_matching(
-            fields
         )
 
         # ====================================================
@@ -356,6 +371,13 @@ async def process_uploaded_document(
             "full_text": extracted_text
 
         }
+        print("====================================")
+        print("OCR PROCESSING COMPLETED")
+        print("RETURNING RESPONSE TO FRONTEND")
+        print("====================================")
+
+        return response_data
+
 
     except Exception as e:
 
