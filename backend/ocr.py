@@ -165,85 +165,51 @@ def deskew_image(image):
 # ============================================================
 # OCR IMAGE
 # ============================================================
+# ============================================================
+# OCR IMAGE
+# ============================================================
 
 def extract_text_from_image(image):
-    
+
     if image is None:
         raise ValueError("Invalid image.")
 
-    # ---------------------------------------------
+    # --------------------------------------------------------
     # Deskew
-    # ---------------------------------------------
+    # --------------------------------------------------------
+
     image = deskew_image(image)
 
-    # ---------------------------------------------
+    # --------------------------------------------------------
     # Preprocess
-    # ---------------------------------------------
+    # --------------------------------------------------------
+
     processed = preprocess_image(image)
 
-    # ---------------------------------------------
-    # OCR VERSION 1 - normal
-    # ---------------------------------------------
-    text_normal = pytesseract.image_to_string(
-        processed,
-        config="--oem 3 --psm 6"
-    )
-
-    # ---------------------------------------------
-    # OCR VERSION 2 - automatic page segmentation
-    # ---------------------------------------------
-    text_auto = pytesseract.image_to_string(
-        processed,
-        config="--oem 3 --psm 3"
-    )
-
-    # ---------------------------------------------
-    # Choose better result
-    # ---------------------------------------------
-    results = [
-        text_normal,
-        text_auto
-    ]
-
-    best_text = max(
-        results,
-        key=ocr_score
-    )
-
-    return best_text.strip()
-
     # --------------------------------------------------------
-    # Deskew
+    # OCR
     # --------------------------------------------------------
 
-    image = deskew_image(
-        image
-    )
+    try:
 
-    # --------------------------------------------------------
-    # Preprocess
-    # --------------------------------------------------------
+        text = pytesseract.image_to_string(
+            processed,
+            config="--oem 3 --psm 6",
+            timeout=30
+        )
 
-    processed = preprocess_image(
-        image
-    )
+    except RuntimeError as e:
 
-    # --------------------------------------------------------
-    # SINGLE OCR PASS
-    # --------------------------------------------------------
-    #
-    # IMPORTANT:
-    # We run Tesseract only once.
-    # This makes Render processing faster.
-    #
-
-    text = pytesseract.image_to_string(
-        processed,
-        config="--oem 3 --psm 6"
-    )
+        raise RuntimeError(
+            f"Tesseract OCR timed out or failed: {str(e)}"
+        )
 
     return text.strip()
 
+
+# ============================================================
+# PROCESS IMAGE
+# ============================================================
 
 # ============================================================
 # PROCESS IMAGE
