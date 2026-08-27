@@ -66,23 +66,21 @@ def preprocess_image(image):
     # Resize only when necessary
     # --------------------------------------------------------
 
-    height, width = gray.shape
+    if width != target_width:
+    
+       scale = target_width / width
 
-    target_width = 1200
-
-    if width < target_width:
-
-        scale = target_width / width
-
-        gray = cv2.resize(
-            gray,
-            None,
-            fx=scale,
-            fy=scale,
-            interpolation=cv2.INTER_AREA
-              if width > target_width
-        else cv2.INTER_CUBIC
+    gray = cv2.resize(
+        gray,
+        None,
+        fx=scale,
+        fy=scale,
+        interpolation=(
+            cv2.INTER_AREA
+            if width > target_width
+            else cv2.INTER_CUBIC
         )
+    )
 
     # --------------------------------------------------------
     # Mild contrast enhancement
@@ -197,20 +195,16 @@ def ocr_score(text):
 # ============================================================
 # OCR IMAGE
 # ============================================================
-
 def extract_text_from_image(image):
     
     if image is None:
         raise ValueError("Invalid image.")
 
-    # Deskew
-    image = deskew_image(image)
-
-    # Preprocess
+    # Preprocess directly
     processed = preprocess_image(image)
 
-    # OCR
     try:
+
         text = pytesseract.image_to_string(
             processed,
             config="--oem 3 --psm 6",
@@ -218,6 +212,7 @@ def extract_text_from_image(image):
         )
 
     except RuntimeError as e:
+
         raise RuntimeError(
             f"Tesseract OCR timed out or failed: {str(e)}"
         )
