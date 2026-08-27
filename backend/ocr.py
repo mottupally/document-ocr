@@ -11,6 +11,7 @@ import fitz
 
 if os.name == "nt":
 
+    # Windows
     TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
     if os.path.exists(TESSERACT_PATH):
@@ -98,7 +99,6 @@ def deskew_image(image):
     )
 
     if len(coords) < 100:
-
         return image
 
     angle = cv2.minAreaRect(
@@ -106,16 +106,12 @@ def deskew_image(image):
     )[-1]
 
     if angle < -45:
-
         angle = -(90 + angle)
-
     else:
-
         angle = -angle
 
     # Ignore unrealistic rotations
     if abs(angle) > 10:
-
         return image
 
     height, width = image.shape[:2]
@@ -149,10 +145,7 @@ def deskew_image(image):
 def extract_text_from_image(image):
 
     if image is None:
-
-        raise ValueError(
-            "Invalid image."
-        )
+        raise ValueError("Invalid image.")
 
     # --------------------------------------------------------
     # Deskew
@@ -175,10 +168,8 @@ def extract_text_from_image(image):
     # --------------------------------------------------------
     #
     # IMPORTANT:
-    # Previously your code ran Tesseract 3 times.
-    # That made Render very slow.
-    #
-    # We now run it only once.
+    # We run Tesseract only once.
+    # This makes Render processing faster.
     #
 
     text = pytesseract.image_to_string(
@@ -235,10 +226,6 @@ def process_pdf(file_path):
             # ------------------------------------------------
             # Render PDF at moderate resolution
             # ------------------------------------------------
-            #
-            # 3x was expensive on Render.
-            # 2x is usually sufficient for OCR.
-            #
 
             pixmap = page.get_pixmap(
                 matrix=fitz.Matrix(2, 2),
@@ -260,7 +247,6 @@ def process_pdf(file_path):
             )
 
             if image is None:
-
                 continue
 
             text = extract_text_from_image(
