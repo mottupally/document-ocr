@@ -537,42 +537,33 @@ def extract_email(text):
 # ==========================================================
 # AMOUNT
 # ==========================================================
+import re
 
-def extract_amount(text):
 
-    patterns = [
+def clean_amount(value):
 
-        # Rs 1,500
-        r"(?:₹|Rs\.?|INR)"
-        r"\s*"
-        r"[\d,]+(?:\.\d{1,2})?",
+    if not value:
+        return ""
 
-        # Total: 1,500
-        r"(?:Grand\s*Total|Total\s*Amount|Total|Amount)"
-        r"\s*[:\-]?\s*"
-        r"(?:₹|Rs\.?|INR)?"
-        r"\s*"
-        r"[\d,]+(?:\.\d{1,2})?"
-    ]
+    value = value.strip()
 
-    matches = []
+    # Remove currency symbols
+    value = re.sub(
+        r'[₹$€£]',
+        '',
+        value
+    )
 
-    for pattern in patterns:
+    # Find an actual numeric amount
+    match = re.search(
+        r'\b\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?\b|\b\d+(?:\.\d{1,2})?\b',
+        value
+    )
 
-        found = re.findall(
-            pattern,
-            text,
-            re.IGNORECASE
-        )
+    if not match:
+        return ""
 
-        matches.extend(found)
-
-    if matches:
-
-        # Return the last amount found
-        return matches[-1].strip()
-
-    return None
+    return match.group(0)
 
 
 # ==========================================================

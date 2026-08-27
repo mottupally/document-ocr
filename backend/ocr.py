@@ -28,15 +28,39 @@ else:
 # ============================================================
 
 def preprocess_image(image):
-
+    
     if image is None:
         raise ValueError("Invalid image.")
 
-    # Convert to grayscale
     gray = cv2.cvtColor(
         image,
         cv2.COLOR_BGR2GRAY
     )
+
+    height, width = gray.shape
+
+    # Resize only when image is small
+    if width < 1600:
+
+        scale = 1600 / width
+
+        gray = cv2.resize(
+            gray,
+            None,
+            fx=scale,
+            fy=scale,
+            interpolation=cv2.INTER_CUBIC
+        )
+
+    # Mild contrast enhancement
+    clahe = cv2.createCLAHE(
+        clipLimit=2.0,
+        tileGridSize=(8, 8)
+    )
+
+    enhanced = clahe.apply(gray)
+
+    return enhanced
 
     # --------------------------------------------------------
     # Resize only when necessary
@@ -143,9 +167,50 @@ def deskew_image(image):
 # ============================================================
 
 def extract_text_from_image(image):
-
+    
     if image is None:
         raise ValueError("Invalid image.")
+
+    # ---------------------------------------------
+    # Deskew
+    # ---------------------------------------------
+    image = deskew_image(image)
+
+    # ---------------------------------------------
+    # Preprocess
+    # ---------------------------------------------
+    processed = preprocess_image(image)
+
+    # ---------------------------------------------
+    # OCR VERSION 1 - normal
+    # ---------------------------------------------
+    text_normal = pytesseract.image_to_string(
+        processed,
+        config="--oem 3 --psm 6"
+    )
+
+    # ---------------------------------------------
+    # OCR VERSION 2 - automatic page segmentation
+    # ---------------------------------------------
+    text_auto = pytesseract.image_to_string(
+        processed,
+        config="--oem 3 --psm 3"
+    )
+
+    # ---------------------------------------------
+    # Choose better result
+    # ---------------------------------------------
+    results = [
+        text_normal,
+        text_auto
+    ]
+
+    best_text = max(
+        results,
+        key=ocr_score
+    )
+
+    return best_text.strip()
 
     # --------------------------------------------------------
     # Deskew
