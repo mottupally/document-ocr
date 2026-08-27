@@ -1,18 +1,12 @@
 // ============================================================
-// DataExtract - Document OCR Demo
-// Frontend JavaScript
+// DataExtract - OCR Demo Frontend
 // ============================================================
-
 
 // ============================================================
 // CONFIGURATION
 // ============================================================
 
-// RENDER BACKEND
 const API_URL = "https://document-ocr-zthu.onrender.com/api/ocr";
-
-// LOCAL BACKEND (only use when backend is running locally)
-// const API_URL = "http://127.0.0.1:8001/api/ocr";
 
 
 // ============================================================
@@ -43,9 +37,6 @@ const ocrText =
 const downloadBtn =
     document.getElementById("downloadBtn");
 
-
-// Accuracy elements
-
 const referenceText =
     document.getElementById("referenceText");
 
@@ -73,204 +64,8 @@ const overallAccuracy =
 // ============================================================
 
 let selectedFile = null;
-
 let latestResult = null;
-
 let latestOCRText = "";
-
-let progressTimer = null;
-
-
-// ============================================================
-// PROGRESS BAR
-// ============================================================
-
-function showProgress(percent, messageText) {
-
-    let progressContainer =
-        document.getElementById("ocrProgressContainer");
-
-    if (!progressContainer) {
-
-        progressContainer =
-            document.createElement("div");
-
-        progressContainer.id =
-            "ocrProgressContainer";
-
-        progressContainer.style.width = "100%";
-        progressContainer.style.marginTop = "20px";
-        progressContainer.style.display = "none";
-
-        progressContainer.innerHTML = `
-            <div style="
-                width: 100%;
-                height: 10px;
-                background: #e5e7eb;
-                border-radius: 10px;
-                overflow: hidden;
-            ">
-                <div id="ocrProgressBar" style="
-                    width: 0%;
-                    height: 100%;
-                    background: #159447;
-                    border-radius: 10px;
-                    transition: width 0.5s ease;
-                "></div>
-            </div>
-
-            <div id="ocrProgressText" style="
-                margin-top: 8px;
-                text-align: center;
-                font-size: 14px;
-                color: #687d76;
-            ">
-                Preparing...
-            </div>
-        `;
-
-        if (processBtn && processBtn.parentNode) {
-
-            processBtn.parentNode.appendChild(
-                progressContainer
-            );
-
-        }
-    }
-
-    const progressBar =
-        document.getElementById("ocrProgressBar");
-
-    const progressText =
-        document.getElementById("ocrProgressText");
-
-    progressContainer.style.display =
-        "block";
-
-    if (progressBar) {
-
-        progressBar.style.width =
-            Math.min(
-                100,
-                Math.max(0, percent)
-            ) + "%";
-
-    }
-
-    if (progressText) {
-
-        progressText.textContent =
-            messageText + " " + percent + "%";
-
-    }
-
-}
-
-
-// ============================================================
-// HIDE PROGRESS
-// ============================================================
-
-function hideProgress() {
-
-    if (progressTimer) {
-
-        clearTimeout(progressTimer);
-
-        progressTimer = null;
-
-    }
-
-    const progressContainer =
-        document.getElementById(
-            "ocrProgressContainer"
-        );
-
-    if (progressContainer) {
-
-        progressContainer.style.display =
-            "none";
-
-    }
-
-}
-
-
-// ============================================================
-// START ESTIMATED PROGRESS
-// ============================================================
-
-function startEstimatedProgress() {
-
-    showProgress(
-        10,
-        "Uploading document..."
-    );
-
-    setTimeout(function () {
-
-        showProgress(
-            25,
-            "Preparing document..."
-        );
-
-    }, 500);
-
-    setTimeout(function () {
-
-        showProgress(
-            40,
-            "Running OCR..."
-        );
-
-    }, 1500);
-
-    setTimeout(function () {
-
-        showProgress(
-            55,
-            "Processing OCR text..."
-        );
-
-    }, 4000);
-
-    setTimeout(function () {
-
-        showProgress(
-            65,
-            "Extracting fields..."
-        );
-
-    }, 7000);
-
-    setTimeout(function () {
-
-        showProgress(
-            75,
-            "Classifying document..."
-        );
-
-    }, 10000);
-
-    setTimeout(function () {
-
-        showProgress(
-            85,
-            "Validating extracted data..."
-        );
-
-    }, 13000);
-
-    setTimeout(function () {
-
-        showProgress(
-            90,
-            "Finalizing results..."
-        );
-
-    }, 16000);
-
-}
 
 
 // ============================================================
@@ -284,39 +79,25 @@ console.log("====================================");
 
 
 // ============================================================
-// FILE INPUT
+// FILE SELECTION
 // ============================================================
 
 if (fileInput) {
 
-    fileInput.addEventListener(
-        "change",
-        function (event) {
+    fileInput.addEventListener("change", function (event) {
 
-            console.log(
-                "File input changed."
-            );
+        console.log("File input changed");
 
-            const files =
-                event.target.files;
+        const file = event.target.files[0];
 
-            if (
-                !files ||
-                files.length === 0
-            ) {
-
-                clearSelectedFile();
-
-                return;
-
-            }
-
-            processSelectedFile(
-                files[0]
-            );
-
+        if (!file) {
+            clearSelectedFile();
+            return;
         }
-    );
+
+        processSelectedFile(file);
+
+    });
 
 }
 
@@ -327,57 +108,27 @@ if (fileInput) {
 
 function processSelectedFile(file) {
 
-    console.log(
-        "Selected file:",
-        file.name
-    );
+    console.log("Selected file:", file.name);
+    console.log("File size:", file.size);
+    console.log("File type:", file.type);
 
-    console.log(
-        "File size:",
-        file.size
-    );
-
-    console.log(
-        "File type:",
-        file.type
-    );
-
-
-    // --------------------------------------------------------
-    // FILE SIZE
-    // --------------------------------------------------------
-
-    const maxSize =
-        20 * 1024 * 1024;
+    const maxSize = 20 * 1024 * 1024;
 
     if (file.size === 0) {
 
-        showError(
-            "The selected file is empty."
-        );
-
+        showError("The selected file is empty.");
         clearSelectedFile();
-
         return;
 
     }
 
     if (file.size > maxSize) {
 
-        showError(
-            "File is larger than 20 MB."
-        );
-
+        showError("File is larger than 20 MB.");
         clearSelectedFile();
-
         return;
 
     }
-
-
-    // --------------------------------------------------------
-    // FILE EXTENSION
-    // --------------------------------------------------------
 
     const extension =
         file.name
@@ -395,75 +146,52 @@ function processSelectedFile(file) {
         "bmp"
     ];
 
-    if (
-        !allowedExtensions.includes(
-            extension
-        )
-    ) {
+    if (!allowedExtensions.includes(extension)) {
 
         showError(
             "Unsupported file type. Please select PDF, JPG, JPEG, PNG, TIFF or BMP."
         );
 
         clearSelectedFile();
-
         return;
 
     }
 
-
-    // --------------------------------------------------------
-    // SAVE FILE
-    // --------------------------------------------------------
-
     selectedFile = file;
-
-
-    // --------------------------------------------------------
-    // DISPLAY FILE NAME
-    // --------------------------------------------------------
 
     if (fileName) {
 
         fileName.textContent =
-            "✓ Selected: " +
-            file.name;
+            "✓ Selected: " + file.name;
 
-        fileName.style.color =
-            "#159447";
+        fileName.style.color = "#159447";
 
     }
 
-
-    // --------------------------------------------------------
-    // ENABLE BUTTON
-    // --------------------------------------------------------
-
     if (processBtn) {
 
-        processBtn.disabled =
-            false;
+        processBtn.disabled = false;
 
     }
 
     clearMessage();
 
-    console.log(
-        "File successfully accepted."
-    );
+    console.log("File successfully accepted.");
 
 }
 
 
 // ============================================================
-// CLEAR SELECTED FILE
+// CLEAR FILE
 // ============================================================
 
 function clearSelectedFile() {
 
-    hideProgress();
-
     selectedFile = null;
+
+    if (fileInput) {
+        fileInput.value = "";
+    }
 
     if (fileName) {
 
@@ -477,8 +205,7 @@ function clearSelectedFile() {
 
     if (processBtn) {
 
-        processBtn.disabled =
-            true;
+        processBtn.disabled = true;
 
     }
 
@@ -486,81 +213,43 @@ function clearSelectedFile() {
 
 
 // ============================================================
-// DRAG OVER
+// DRAG & DROP
 // ============================================================
 
 if (uploadBox) {
 
-    uploadBox.addEventListener(
-        "dragover",
-        function (event) {
+    uploadBox.addEventListener("dragover", function (event) {
 
-            event.preventDefault();
+        event.preventDefault();
 
-            uploadBox.classList.add(
-                "dragging"
-            );
+        uploadBox.classList.add("dragging");
 
-        }
-    );
-
-}
+    });
 
 
-// ============================================================
-// DRAG LEAVE
-// ============================================================
+    uploadBox.addEventListener("dragleave", function () {
 
-if (uploadBox) {
+        uploadBox.classList.remove("dragging");
 
-    uploadBox.addEventListener(
-        "dragleave",
-        function () {
-
-            uploadBox.classList.remove(
-                "dragging"
-            );
-
-        }
-    );
-
-}
+    });
 
 
-// ============================================================
-// DROP
-// ============================================================
+    uploadBox.addEventListener("drop", function (event) {
 
-if (uploadBox) {
+        event.preventDefault();
 
-    uploadBox.addEventListener(
-        "drop",
-        function (event) {
+        uploadBox.classList.remove("dragging");
 
-            event.preventDefault();
+        const file =
+            event.dataTransfer.files[0];
 
-            uploadBox.classList.remove(
-                "dragging"
-            );
+        if (file) {
 
-            const files =
-                event.dataTransfer.files;
-
-            if (
-                !files ||
-                files.length === 0
-            ) {
-
-                return;
-
-            }
-
-            processSelectedFile(
-                files[0]
-            );
+            processSelectedFile(file);
 
         }
-    );
+
+    });
 
 }
 
@@ -571,111 +260,94 @@ if (uploadBox) {
 
 if (processBtn) {
 
-    processBtn.addEventListener(
-        "click",
-        function (event) {
+    processBtn.addEventListener("click", function (event) {
 
-            event.preventDefault();
+        event.preventDefault();
 
-            console.log(
-                "Process Document clicked."
+        console.log("====================================");
+        console.log("PROCESS BUTTON CLICKED");
+        console.log("====================================");
+
+        if (!selectedFile) {
+
+            showError(
+                "Please select a file first."
             );
 
-            console.log(
-                "Current selected file:",
-                selectedFile
-            );
-
-            if (!selectedFile) {
-
-                showError(
-                    "Please select a file first."
-                );
-
-                return;
-
-            }
-
-            sendToBackend();
+            return;
 
         }
-    );
+
+        sendToBackend();
+
+    });
 
 }
 
 
 // ============================================================
-// SEND FILE TO BACKEND
+// SEND TO BACKEND
 // ============================================================
 
 async function sendToBackend() {
 
     clearMessage();
 
+    if (!selectedFile) {
+
+        showError("Please select a file first.");
+        return;
+
+    }
+
     if (loading) {
 
-        loading.style.display =
-            "block";
+        loading.style.display = "block";
 
     }
 
     if (processBtn) {
 
-        processBtn.disabled =
-            true;
-
-        processBtn.textContent =
-            "Processing...";
+        processBtn.disabled = true;
+        processBtn.textContent = "Processing...";
 
     }
 
     if (results) {
 
-        results.style.display =
-            "none";
+        results.style.display = "none";
 
     }
 
-    startEstimatedProgress();
+    showProgress(
+        10,
+        "Uploading document..."
+    );
 
 
     try {
 
-        console.log(
-            "===================================="
-        );
+        console.log("====================================");
+        console.log("SENDING FILE TO BACKEND");
+        console.log("====================================");
 
-        console.log(
-            "Sending file to backend..."
-        );
-
-        console.log(
-            "API URL:",
-            API_URL
-        );
-
-        console.log(
-            "File:",
-            selectedFile.name
-        );
-
-        console.log(
-            "===================================="
-        );
+        console.log("API URL:", API_URL);
+        console.log("File:", selectedFile.name);
 
 
         // ----------------------------------------------------
-        // FORM DATA
+        // CREATE FORM DATA
         // ----------------------------------------------------
 
-        const formData =
-            new FormData();
+        const formData = new FormData();
 
         formData.append(
             "file",
-            selectedFile,
-            selectedFile.name
+            selectedFile
         );
+
+
+        console.log("FormData created.");
 
 
         showProgress(
@@ -685,157 +357,60 @@ async function sendToBackend() {
 
 
         // ----------------------------------------------------
-        // TIMEOUT
-        // ----------------------------------------------------
-
-        const controller =
-            new AbortController();
-
-        const timeout =
-            setTimeout(
-                function () {
-
-                    controller.abort();
-
-                },
-                120000
-            );
-
-
-        // ----------------------------------------------------
         // SEND REQUEST
         // ----------------------------------------------------
 
-        showProgress(
-            40,
-            "Running OCR..."
+        console.log("Calling fetch...");
+
+
+        const response = await fetch(
+            API_URL,
+            {
+                method: "POST",
+                body: formData
+            }
         );
 
 
-        const response =
-            await fetch(
-                API_URL,
-                {
-                    method: "POST",
-                    body: formData,
-                    signal: controller.signal
-                }
-            );
-
-
-        clearTimeout(
-            timeout
-        );
-
-
+        console.log("Response received.");
         console.log(
-            "Backend response received."
-        );
-
-        console.log(
-            "HTTP status:",
+            "HTTP Status:",
             response.status
         );
 
 
-        // ----------------------------------------------------
-        // CHECK RESPONSE
-        // ----------------------------------------------------
-
-        if (!response.ok) {
-
-            let errorMessage =
-                "Document processing failed.";
-
-            try {
-
-                const errorText =
-                    await response.text();
-
-                console.error(
-                    "Backend error response:",
-                    errorText
-                );
-
-                try {
-
-                    const errorData =
-                        JSON.parse(
-                            errorText
-                        );
-
-                    errorMessage =
-                        errorData.detail ||
-                        errorData.message ||
-                        errorMessage;
-
-                }
-                catch {
-
-                    if (errorText) {
-
-                        errorMessage =
-                            errorText;
-
-                    }
-
-                }
-
-            }
-            catch (error) {
-
-                console.error(
-                    "Could not read error response:",
-                    error
-                );
-
-            }
-
-            throw new Error(
-                errorMessage
-            );
-
-        }
+        showProgress(
+            60,
+            "Receiving OCR result..."
+        );
 
 
         // ----------------------------------------------------
         // READ RESPONSE AS TEXT
         // ----------------------------------------------------
 
-        showProgress(
-            70,
-            "Reading OCR result..."
-        );
-
-
         const responseText =
             await response.text();
 
 
-        console.log(
-            "===================================="
-        );
+        console.log("====================================");
+        console.log("RAW BACKEND RESPONSE");
+        console.log("====================================");
 
-        console.log(
-            "RAW BACKEND RESPONSE:"
-        );
-
-        console.log(
-            responseText
-        );
-
-        console.log(
-            "===================================="
-        );
+        console.log(responseText);
 
 
-        if (
-            !responseText ||
-            responseText.trim() === ""
-        ) {
+        // ----------------------------------------------------
+        // CHECK HTTP STATUS
+        // ----------------------------------------------------
+
+        if (!response.ok) {
 
             throw new Error(
-                "Backend returned an empty response."
+                "Backend returned HTTP " +
+                response.status +
+                ": " +
+                responseText
             );
 
         }
@@ -850,16 +425,19 @@ async function sendToBackend() {
         try {
 
             data =
-                JSON.parse(
-                    responseText
-                );
+                JSON.parse(responseText);
 
         }
-        catch (error) {
+        catch (jsonError) {
 
             console.error(
                 "JSON parsing failed:",
-                error
+                jsonError
+            );
+
+            console.error(
+                "Backend response:",
+                responseText
             );
 
             throw new Error(
@@ -869,54 +447,23 @@ async function sendToBackend() {
         }
 
 
-        console.log(
-            "PARSED OCR RESPONSE:"
-        );
+        console.log("====================================");
+        console.log("PARSED OCR RESPONSE");
+        console.log("====================================");
 
-        console.log(
-            data
-        );
+        console.log(data);
 
 
         // ----------------------------------------------------
         // SAVE RESULT
         // ----------------------------------------------------
 
-        latestResult =
-            data;
+        latestResult = data;
 
-
-        // ----------------------------------------------------
-        // UPDATE PROGRESS
-        // ----------------------------------------------------
 
         showProgress(
             75,
-            "Processing OCR result..."
-        );
-
-
-        await new Promise(
-            resolve =>
-                setTimeout(
-                    resolve,
-                    300
-                )
-        );
-
-
-        showProgress(
-            85,
-            "Validating extracted data..."
-        );
-
-
-        await new Promise(
-            resolve =>
-                setTimeout(
-                    resolve,
-                    300
-                )
+            "Extracting fields..."
         );
 
 
@@ -924,14 +471,21 @@ async function sendToBackend() {
         // DISPLAY RESULT
         // ----------------------------------------------------
 
-        showResults(
-            data
+        showResults(data);
+
+
+        showProgress(
+            90,
+            "Finalizing results..."
         );
 
 
-        // ----------------------------------------------------
-        // COMPLETE
-        // ----------------------------------------------------
+        await new Promise(function (resolve) {
+
+            setTimeout(resolve, 300);
+
+        });
+
 
         showProgress(
             100,
@@ -949,54 +503,20 @@ async function sendToBackend() {
         );
 
 
-        progressTimer =
-            setTimeout(
-                hideProgress,
-                3000
-            );
-
     }
     catch (error) {
 
-        console.error(
-            "===================================="
+        console.error("====================================");
+        console.error("OCR ERROR");
+        console.error("====================================");
+
+        console.error(error);
+
+
+        showError(
+            "OCR processing failed: " +
+            error.message
         );
-
-        console.error(
-            "OCR ERROR:",
-            error
-        );
-
-        console.error(
-            "===================================="
-        );
-
-
-        if (
-            error.name ===
-            "AbortError"
-        ) {
-
-            showError(
-                "OCR processing timed out. The Render backend took more than 120 seconds."
-            );
-
-        }
-        else {
-
-            showError(
-                "Backend connection failed: " +
-                error.message
-            );
-
-        }
-
-
-        progressTimer =
-            setTimeout(
-                hideProgress,
-                3000
-            );
 
     }
     finally {
@@ -1024,15 +544,114 @@ async function sendToBackend() {
 
 
 // ============================================================
+// PROGRESS BAR
+// ============================================================
+
+function showProgress(percent, text) {
+
+    let container =
+        document.getElementById(
+            "ocrProgressContainer"
+        );
+
+    if (!container) {
+
+        container =
+            document.createElement("div");
+
+        container.id =
+            "ocrProgressContainer";
+
+        container.style.width =
+            "100%";
+
+        container.style.margin =
+            "20px 0";
+
+        container.innerHTML = `
+
+            <div style="
+                width:100%;
+                height:10px;
+                background:#e5e7eb;
+                border-radius:10px;
+                overflow:hidden;
+            ">
+
+                <div id="ocrProgressBar" style="
+                    width:0%;
+                    height:100%;
+                    background:#159447;
+                    border-radius:10px;
+                    transition:width 0.4s ease;
+                "></div>
+
+            </div>
+
+            <div id="ocrProgressText" style="
+                margin-top:8px;
+                text-align:center;
+                font-size:14px;
+                color:#687d76;
+            "></div>
+        `;
+
+        if (processBtn && processBtn.parentNode) {
+
+            processBtn.parentNode.insertBefore(
+                container,
+                processBtn.nextSibling
+            );
+
+        }
+
+    }
+
+
+    container.style.display =
+        "block";
+
+
+    const bar =
+        document.getElementById(
+            "ocrProgressBar"
+        );
+
+    const progressText =
+        document.getElementById(
+            "ocrProgressText"
+        );
+
+
+    if (bar) {
+
+        bar.style.width =
+            percent + "%";
+
+    }
+
+
+    if (progressText) {
+
+        progressText.textContent =
+            text + " " + percent + "%";
+
+    }
+
+}
+
+
+// ============================================================
 // SHOW RESULTS
 // ============================================================
 
 function showResults(data) {
 
-    console.log(
-        "Displaying results:",
-        data
-    );
+    console.log("====================================");
+    console.log("DISPLAYING RESULTS");
+    console.log("====================================");
+
+    console.log(data);
 
 
     if (results) {
@@ -1055,8 +674,6 @@ function showResults(data) {
         "";
 
 
-    // Check nested result
-
     if (
         !text &&
         data.result
@@ -1073,9 +690,7 @@ function showResults(data) {
 
 
     latestOCRText =
-        String(
-            text || ""
-        );
+        String(text || "");
 
 
     if (ocrText) {
@@ -1088,7 +703,7 @@ function showResults(data) {
 
 
     // ========================================================
-    // STRUCTURED FIELDS
+    // FIELDS
     // ========================================================
 
     let fields =
@@ -1096,8 +711,6 @@ function showResults(data) {
         data.extracted_fields ||
         {};
 
-
-    // Check nested result
 
     if (
         Object.keys(fields).length === 0 &&
@@ -1112,88 +725,62 @@ function showResults(data) {
     }
 
 
-    // --------------------------------------------------------
-    // IMPORTANT FALLBACK
-    // --------------------------------------------------------
-    // If backend returns fields directly,
-    // display them as structured fields.
+    // If backend returns document_type,
+    // company, name, date, amount directly
 
     if (
         Object.keys(fields).length === 0
     ) {
 
-        const possibleFields = {
+        const possibleFields = {};
 
-            document_type:
-                data.document_type,
-
-            documentType:
-                data.documentType,
-
-            company:
-                data.company,
-
-            name:
-                data.name,
-
-            date:
-                data.date,
-
-            amount:
-                data.amount,
-
-            email:
-                data.email,
-
-            vehicle:
-                data.vehicle,
-
-            customer:
-                data.customer,
-
-            invoice:
-                data.invoice,
-
-            lr:
-                data.lr,
-
-            origin:
-                data.origin,
-
-            destination:
-                data.destination,
-
-            weight:
-                data.weight
-
-        };
+        const fieldNames = [
+            "document_type",
+            "company",
+            "name",
+            "date",
+            "amount",
+            "email",
+            "vehicle",
+            "customer",
+            "lr",
+            "delivery",
+            "origin",
+            "destination",
+            "gateOut",
+            "gate_out",
+            "weight",
+            "weightKg",
+            "invoice",
+            "ewayBill",
+            "eway_bill"
+        ];
 
 
-        Object.entries(
-            possibleFields
-        ).forEach(
-            function ([key, value]) {
+        fieldNames.forEach(function (key) {
 
-                if (
-                    value !== undefined &&
-                    value !== null &&
-                    value !== ""
-                ) {
+            if (
+                Object.prototype.hasOwnProperty.call(
+                    data,
+                    key
+                )
+            ) {
 
-                    fields[key] =
-                        value;
-
-                }
+                possibleFields[key] =
+                    data[key];
 
             }
-        );
+
+        });
+
+
+        fields =
+            possibleFields;
 
     }
 
 
-    displayFields(
-        fields
-    );
+    displayFields(fields);
 
 
     // ========================================================
@@ -1254,67 +841,20 @@ function showResults(data) {
 
 
     // ========================================================
-    // RESET ACCURACY
+    // SCROLL TO RESULT
     // ========================================================
 
-    if (accuracyResult) {
+    setTimeout(function () {
 
-        accuracyResult.style.display =
-            "none";
+        if (results) {
 
-    }
+            results.scrollIntoView({
+                behavior: "smooth"
+            });
 
+        }
 
-    if (characterAccuracy) {
-
-        characterAccuracy.textContent =
-            "0%";
-
-    }
-
-
-    if (wordAccuracy) {
-
-        wordAccuracy.textContent =
-            "0%";
-
-    }
-
-
-    if (correctWords) {
-
-        correctWords.textContent =
-            "0 / 0";
-
-    }
-
-
-    if (overallAccuracy) {
-
-        overallAccuracy.textContent =
-            "0%";
-
-    }
-
-
-    // ========================================================
-    // SCROLL TO RESULTS
-    // ========================================================
-
-    setTimeout(
-        function () {
-
-            if (results) {
-
-                results.scrollIntoView({
-                    behavior: "smooth"
-                });
-
-            }
-
-        },
-        200
-    );
+    }, 200);
 
 }
 
@@ -1326,14 +866,11 @@ function showResults(data) {
 function displayFields(fields) {
 
     if (!fieldsContainer) {
-
         return;
-
     }
 
 
-    fieldsContainer.innerHTML =
-        "";
+    fieldsContainer.innerHTML = "";
 
 
     if (
@@ -1341,17 +878,8 @@ function displayFields(fields) {
         Object.keys(fields).length === 0
     ) {
 
-        const empty =
-            document.createElement(
-                "p"
-            );
-
-        empty.textContent =
-            "No structured fields detected.";
-
-        fieldsContainer.appendChild(
-            empty
-        );
+        fieldsContainer.innerHTML =
+            "<p>No structured fields detected.</p>";
 
         return;
 
@@ -1359,112 +887,20 @@ function displayFields(fields) {
 
 
     const grid =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     grid.className =
         "extracted-fields-grid";
 
 
-    // Preferred order
-
-    const preferredOrder = [
-
-        "document_type",
-        "documentType",
-
-        "company",
-
-        "name",
-
-        "date",
-
-        "amount",
-
-        "email",
-
-        "vehicle",
-
-        "customer",
-
-        "lr",
-
-        "delivery",
-
-        "origin",
-
-        "destination",
-
-        "gateOut",
-        "gate_out",
-        "gateout",
-
-        "weight",
-        "weightKg",
-        "weight_kg",
-
-        "invoice",
-
-        "ewayBill",
-        "eway_bill",
-        "eWayBill"
-
-    ];
-
-
-    const used =
-        new Set();
-
-
-    // --------------------------------------------------------
-    // Preferred fields
-    // --------------------------------------------------------
-
-    preferredOrder.forEach(
-        function (key) {
-
-            if (
-                Object.prototype.hasOwnProperty.call(
-                    fields,
-                    key
-                )
-            ) {
-
-                addExtractedField(
-                    grid,
-                    key,
-                    fields[key]
-                );
-
-                used.add(key);
-
-            }
-
-        }
-    );
-
-
-    // --------------------------------------------------------
-    // Remaining fields
-    // --------------------------------------------------------
-
-    Object.entries(
-        fields
-    ).forEach(
+    Object.entries(fields).forEach(
         function ([key, value]) {
 
-            if (
-                !used.has(key)
-            ) {
-
-                addExtractedField(
-                    grid,
-                    key,
-                    value
-                );
-
-            }
+            addExtractedField(
+                grid,
+                key,
+                value
+            );
 
         }
     );
@@ -1478,7 +914,7 @@ function displayFields(fields) {
 
 
 // ============================================================
-// ADD EXTRACTED FIELD
+// ADD FIELD
 // ============================================================
 
 function addExtractedField(
@@ -1488,18 +924,14 @@ function addExtractedField(
 ) {
 
     const div =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     div.className =
         "extracted-field";
 
 
     const label =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     label.className =
         "field-label";
@@ -1509,9 +941,7 @@ function addExtractedField(
 
 
     const fieldValue =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     fieldValue.className =
         "field-value";
@@ -1532,9 +962,7 @@ function addExtractedField(
     ) {
 
         fieldValue.textContent =
-            JSON.stringify(
-                value
-            );
+            JSON.stringify(value);
 
     }
     else {
@@ -1545,23 +973,16 @@ function addExtractedField(
     }
 
 
-    div.appendChild(
-        label
-    );
+    div.appendChild(label);
+    div.appendChild(fieldValue);
 
-    div.appendChild(
-        fieldValue
-    );
-
-    grid.appendChild(
-        div
-    );
+    grid.appendChild(div);
 
 }
 
 
 // ============================================================
-// DISPLAY VALIDATION
+// VALIDATION
 // ============================================================
 
 function displayValidation(
@@ -1570,48 +991,35 @@ function displayValidation(
 ) {
 
     if (!validationContainer) {
-
         return;
-
     }
 
 
-    validationContainer.innerHTML =
-        "";
+    validationContainer.innerHTML = "";
 
 
     const title =
-        document.createElement(
-            "h3"
-        );
+        document.createElement("h3");
 
     title.textContent =
         "Validation";
+
 
     validationContainer.appendChild(
         title
     );
 
 
-    // --------------------------------------------------------
-    // BACKEND VALIDATION
-    // --------------------------------------------------------
-
     if (
         validation &&
         Object.keys(validation).length > 0
     ) {
 
-        Object.entries(
-            validation
-        ).forEach(
+        Object.entries(validation).forEach(
             function ([key, value]) {
 
-                let status =
-                    "PASS";
-
-                let detail =
-                    "";
+                let status = "PASS";
+                let detail = "";
 
 
                 if (
@@ -1637,12 +1045,9 @@ function displayValidation(
                         String(value);
 
 
-                    if (
-                        /FAIL/i.test(raw)
-                    ) {
+                    if (/FAIL/i.test(raw)) {
 
-                        status =
-                            "FAIL";
+                        status = "FAIL";
 
                         detail =
                             raw.replace(
@@ -1653,8 +1058,7 @@ function displayValidation(
                     }
                     else {
 
-                        status =
-                            "PASS";
+                        status = "PASS";
 
                         detail =
                             raw.replace(
@@ -1668,17 +1072,14 @@ function displayValidation(
 
 
                 const row =
-                    document.createElement(
-                        "div"
-                    );
+                    document.createElement("div");
 
                 row.className =
                     "validation-row";
 
 
                 const statusClass =
-                    String(status)
-                        .toLowerCase() ===
+                    String(status).toLowerCase() ===
                     "fail"
                         ? "fail"
                         : "pass";
@@ -1694,8 +1095,7 @@ function displayValidation(
                     '">' +
 
                     escapeHtml(
-                        String(status)
-                            .toUpperCase()
+                        String(status).toUpperCase()
                     ) +
 
                     '</span> — ' +
@@ -1718,38 +1118,22 @@ function displayValidation(
     }
 
 
-    // --------------------------------------------------------
-    // FALLBACK VALIDATION
-    // --------------------------------------------------------
-
     if (
         !fields ||
         Object.keys(fields).length === 0
     ) {
 
-        const row =
-            document.createElement(
-                "div"
-            );
-
-        row.className =
-            "validation-row";
-
-        row.textContent =
-            "No validation data returned by the backend.";
-
-        validationContainer.appendChild(
-            row
-        );
+        validationContainer.innerHTML +=
+            '<div class="validation-row">' +
+            'No validation data returned by the backend.' +
+            '</div>';
 
         return;
 
     }
 
 
-    Object.entries(
-        fields
-    ).forEach(
+    Object.entries(fields).forEach(
         function ([key, value]) {
 
             const valid =
@@ -1759,9 +1143,7 @@ function displayValidation(
 
 
             const row =
-                document.createElement(
-                    "div"
-                );
+                document.createElement("div");
 
             row.className =
                 "validation-row";
@@ -1800,31 +1182,25 @@ function displayValidation(
 
 
 // ============================================================
-// DISPLAY MATCHING
+// MATCHING
 // ============================================================
 
-function displayMatching(
-    matching
-) {
+function displayMatching(matching) {
 
     if (!matchingContainer) {
-
         return;
-
     }
 
 
-    matchingContainer.innerHTML =
-        "";
+    matchingContainer.innerHTML = "";
 
 
     const title =
-        document.createElement(
-            "h3"
-        );
+        document.createElement("h3");
 
     title.textContent =
         "Matching";
+
 
     matchingContainer.appendChild(
         title
@@ -1836,24 +1212,21 @@ function displayMatching(
         Object.keys(matching).length === 0
     ) {
 
-        const note =
-            document.createElement(
-                "div"
-            );
-
-        note.className =
-            "validation-row";
-
-        note.textContent =
-            "No matching data returned by the backend.";
-
-        matchingContainer.appendChild(
-            note
-        );
+        matchingContainer.innerHTML +=
+            '<div class="validation-row">' +
+            'No matching data returned by the backend.' +
+            '</div>';
 
         return;
 
     }
+
+
+    const grid =
+        document.createElement("div");
+
+    grid.className =
+        "matching-grid";
 
 
     const driverSource =
@@ -1883,15 +1256,6 @@ function displayMatching(
         "";
 
 
-    const grid =
-        document.createElement(
-            "div"
-        );
-
-    grid.className =
-        "matching-grid";
-
-
     addMatchingField(
         grid,
         "DRIVER SOURCE",
@@ -1916,8 +1280,7 @@ function displayMatching(
     addMatchingField(
         grid,
         "TRIP",
-        trip,
-        true
+        trip
     );
 
 
@@ -1929,29 +1292,24 @@ function displayMatching(
 
 
 // ============================================================
-// ADD MATCHING FIELD
+// MATCHING FIELD
 // ============================================================
 
 function addMatchingField(
     grid,
     labelText,
-    value,
-    isTrip = false
+    value
 ) {
 
     const div =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     div.className =
         "extracted-field";
 
 
     const label =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     label.className =
         "matching-label";
@@ -1961,24 +1319,10 @@ function addMatchingField(
 
 
     const fieldValue =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     fieldValue.className =
         "matching-value";
-
-
-    if (
-        isTrip &&
-        value
-    ) {
-
-        fieldValue.classList.add(
-            "trip-link"
-        );
-
-    }
 
 
     fieldValue.textContent =
@@ -1989,24 +1333,17 @@ function addMatchingField(
             : String(value);
 
 
-    div.appendChild(
-        label
-    );
-
-    div.appendChild(
-        fieldValue
-    );
+    div.appendChild(label);
+    div.appendChild(fieldValue);
 
 
-    grid.appendChild(
-        div
-    );
+    grid.appendChild(div);
 
 }
 
 
 // ============================================================
-// OCR ACCURACY BUTTON
+// ACCURACY
 // ============================================================
 
 if (calculateAccuracyBtn) {
@@ -2025,10 +1362,6 @@ if (calculateAccuracyBtn) {
 }
 
 
-// ============================================================
-// CALCULATE OCR ACCURACY
-// ============================================================
-
 function calculateOCRAccuracy() {
 
     const reference =
@@ -2040,7 +1373,7 @@ function calculateOCRAccuracy() {
     if (!reference) {
 
         showError(
-            "Please enter the correct text from the original document before calculating accuracy."
+            "Please enter the correct text from the original document."
         );
 
         return;
@@ -2057,26 +1390,13 @@ function calculateOCRAccuracy() {
     if (!ocr) {
 
         showError(
-            "No OCR text is available. Please process a document first."
+            "No OCR text is available."
         );
 
         return;
 
     }
 
-
-    console.log(
-        "Reference text:",
-        reference
-    );
-
-    console.log(
-        "OCR text:",
-        ocr
-    );
-
-
-    // Character accuracy
 
     const characterSimilarity =
         calculateSimilarity(
@@ -2085,17 +1405,12 @@ function calculateOCRAccuracy() {
         );
 
 
-    // Word accuracy
-
     const referenceWords =
-        normalizeWords(
-            reference
-        );
+        normalizeWords(reference);
+
 
     const ocrWords =
-        normalizeWords(
-            ocr
-        );
+        normalizeWords(ocr);
 
 
     const wordResult =
@@ -2105,16 +1420,12 @@ function calculateOCRAccuracy() {
         );
 
 
-    // Overall
-
     const overall =
         (
             characterSimilarity +
             wordResult.accuracy
         ) / 2;
 
-
-    // Display
 
     if (characterAccuracy) {
 
@@ -2167,33 +1478,20 @@ function calculateOCRAccuracy() {
 
 
 // ============================================================
-// NORMALIZE TEXT
+// TEXT NORMALIZATION
 // ============================================================
 
 function normalizeText(text) {
 
     return String(text)
-        .replace(
-            /\r\n/g,
-            "\n"
-        )
-        .replace(
-            /\r/g,
-            "\n"
-        )
-        .replace(
-            /\s+/g,
-            " "
-        )
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
+        .replace(/\s+/g, " ")
         .trim()
         .toLowerCase();
 
 }
 
-
-// ============================================================
-// NORMALIZE WORDS
-// ============================================================
 
 function normalizeWords(text) {
 
@@ -2202,9 +1500,7 @@ function normalizeWords(text) {
 
 
     if (!normalized) {
-
         return [];
-
     }
 
 
@@ -2216,7 +1512,7 @@ function normalizeWords(text) {
 
 
 // ============================================================
-// CHARACTER SIMILARITY
+// SIMILARITY
 // ============================================================
 
 function calculateSimilarity(
@@ -2225,27 +1521,19 @@ function calculateSimilarity(
 ) {
 
     const a =
-        normalizeText(
-            reference
-        );
+        normalizeText(reference);
 
     const b =
-        normalizeText(
-            actual
-        );
+        normalizeText(actual);
 
 
     if (a === b) {
-
         return 100;
-
     }
 
 
     if (!a.length) {
-
         return 0;
-
     }
 
 
@@ -2263,19 +1551,11 @@ function calculateSimilarity(
         );
 
 
-    if (maxLength === 0) {
-
-        return 100;
-
-    }
-
-
     return Math.max(
         0,
         (
             1 -
-            distance /
-            maxLength
+            distance / maxLength
         ) * 100
     );
 
@@ -2283,27 +1563,20 @@ function calculateSimilarity(
 
 
 // ============================================================
-// LEVENSHTEIN DISTANCE
+// LEVENSHTEIN
 // ============================================================
 
-function levenshteinDistance(
-    a,
-    b
-) {
+function levenshteinDistance(a, b) {
 
     const matrix =
         Array.from(
             {
-                length:
-                    a.length + 1
+                length: a.length + 1
             },
-            function () {
-
-                return new Array(
+            () =>
+                new Array(
                     b.length + 1
-                );
-
-            }
+                )
         );
 
 
@@ -2313,8 +1586,7 @@ function levenshteinDistance(
         i++
     ) {
 
-        matrix[i][0] =
-            i;
+        matrix[i][0] = i;
 
     }
 
@@ -2325,8 +1597,7 @@ function levenshteinDistance(
         j++
     ) {
 
-        matrix[0][j] =
-            j;
+        matrix[0][j] = j;
 
     }
 
@@ -2394,8 +1665,7 @@ function calculateWordAccuracy(
     }
 
 
-    let correct =
-        0;
+    let correct = 0;
 
 
     const minLength =
@@ -2423,27 +1693,23 @@ function calculateWordAccuracy(
     }
 
 
-    const positionAccuracy =
+    const accuracy =
         (
             correct /
             referenceWords.length
         ) * 100;
 
 
-    const accuracy =
-        Math.max(
-            0,
-            Math.min(
-                100,
-                positionAccuracy
-            )
-        );
-
-
     return {
 
         accuracy:
-            accuracy,
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    accuracy
+                )
+            ),
 
         correct:
             correct,
@@ -2457,12 +1723,10 @@ function calculateWordAccuracy(
 
 
 // ============================================================
-// FORMAT PERCENTAGE
+// FORMAT
 // ============================================================
 
-function formatPercentage(
-    value
-) {
+function formatPercentage(value) {
 
     return (
         Math.max(
@@ -2479,13 +1743,7 @@ function formatPercentage(
 }
 
 
-// ============================================================
-// FORMAT LABEL
-// ============================================================
-
-function formatLabel(
-    key
-) {
+function formatLabel(key) {
 
     return String(key)
 
@@ -2502,9 +1760,7 @@ function formatLabel(
         .replace(
             /\b\w/g,
             function (letter) {
-
                 return letter.toUpperCase();
-
             }
         );
 
@@ -2515,52 +1771,27 @@ function formatLabel(
 // ESCAPE HTML
 // ============================================================
 
-function escapeHtml(
-    value
-) {
+function escapeHtml(value) {
 
     return String(value)
 
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
 }
 
 
 // ============================================================
-// ERROR MESSAGE
+// MESSAGES
 // ============================================================
 
-function showError(
-    text
-) {
+function showError(text) {
 
     if (!message) {
-
         return;
-
     }
 
 
@@ -2572,18 +1803,10 @@ function showError(
 }
 
 
-// ============================================================
-// SUCCESS MESSAGE
-// ============================================================
-
-function showSuccess(
-    text
-) {
+function showSuccess(text) {
 
     if (!message) {
-
         return;
-
     }
 
 
@@ -2595,16 +1818,11 @@ function showSuccess(
 }
 
 
-// ============================================================
-// CLEAR MESSAGE
-// ============================================================
-
 function clearMessage() {
 
     if (message) {
 
-        message.innerHTML =
-            "";
+        message.innerHTML = "";
 
     }
 
@@ -2683,41 +1901,26 @@ if (downloadBtn) {
 
 
             const url =
-                URL.createObjectURL(
-                    blob
-                );
+                URL.createObjectURL(blob);
 
 
             const link =
-                document.createElement(
-                    "a"
-                );
+                document.createElement("a");
 
 
-            link.href =
-                url;
-
+            link.href = url;
 
             link.download =
                 "dataextract-result.json";
 
 
-            document.body.appendChild(
-                link
-            );
-
+            document.body.appendChild(link);
 
             link.click();
 
+            document.body.removeChild(link);
 
-            document.body.removeChild(
-                link
-            );
-
-
-            URL.revokeObjectURL(
-                url
-            );
+            URL.revokeObjectURL(url);
 
         }
     );
@@ -2726,7 +1929,7 @@ if (downloadBtn) {
 
 
 // ============================================================
-// PREVENT FORM REFRESH
+// PREVENT ACCIDENTAL FORM SUBMISSION
 // ============================================================
 
 document.addEventListener(
@@ -2738,10 +1941,6 @@ document.addEventListener(
     }
 );
 
-
-// ============================================================
-// FINAL LOG
-// ============================================================
 
 console.log(
     "DataExtract frontend ready."
