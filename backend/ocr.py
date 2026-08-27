@@ -161,10 +161,37 @@ def deskew_image(image):
 
     return rotated
 
+    # ============================================================
+# OCR QUALITY SCORE
+# ============================================================
 
-# ============================================================
-# OCR IMAGE
-# ============================================================
+def ocr_score(text):
+
+    if not text:
+        return 0
+
+    characters = [
+        c for c in text
+        if not c.isspace()
+    ]
+
+    if not characters:
+        return 0
+
+    useful = sum(
+        c.isalnum()
+        for c in characters
+    )
+
+    lines = [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip()
+    ]
+
+    return useful + (len(lines) * 10)
+
+
 # ============================================================
 # OCR IMAGE
 # ============================================================
@@ -187,7 +214,7 @@ def extract_text_from_image(image):
     processed = preprocess_image(image)
 
     # --------------------------------------------------------
-    # OCR
+    # OCR WITH TIMEOUT
     # --------------------------------------------------------
 
     try:
@@ -205,11 +232,6 @@ def extract_text_from_image(image):
         )
 
     return text.strip()
-
-
-# ============================================================
-# PROCESS IMAGE
-# ============================================================
 
 # ============================================================
 # PROCESS IMAGE
