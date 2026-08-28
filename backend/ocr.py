@@ -28,17 +28,32 @@ else:
 # ============================================================
 
 def preprocess_image(image):
-
+    
     if image is None:
         raise ValueError("Invalid image.")
 
-    # Convert to grayscale
     gray = cv2.cvtColor(
         image,
         cv2.COLOR_BGR2GRAY
     )
 
     height, width = gray.shape
+
+    target_width = 1000
+
+    if width > target_width:
+
+        scale = target_width / width
+
+        gray = cv2.resize(
+            gray,
+            None,
+            fx=scale,
+            fy=scale,
+            interpolation=cv2.INTER_AREA
+        )
+
+    return gray
 
     # --------------------------------------------------------
     # Resize large images
@@ -206,7 +221,7 @@ def extract_text_from_image(image):
         text = pytesseract.image_to_string(
             processed,
             config="--oem 3 --psm 6",
-            timeout=30
+            timeout=120
         )
 
     except RuntimeError as e:
