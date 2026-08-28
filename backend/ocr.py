@@ -39,18 +39,22 @@ def preprocess_image(image):
 
     height, width = gray.shape
 
-    # Resize only when image is small
-    if width < 1600:
+    # Reduce large phone images
+    target_width = 1000
 
-        scale = 1600 / width
+    if width > target_width:
+
+        scale = target_width / width
 
         gray = cv2.resize(
             gray,
             None,
             fx=scale,
             fy=scale,
-            interpolation=cv2.INTER_CUBIC
+            interpolation=cv2.INTER_AREA
         )
+
+    return gray
 
     # Mild contrast enhancement
     clahe = cv2.createCLAHE(
@@ -195,13 +199,28 @@ def ocr_score(text):
 # ============================================================
 # OCR IMAGE
 # ============================================================
+import time
+
 def extract_text_from_image(image):
-    
+
     if image is None:
         raise ValueError("Invalid image.")
 
-    # Preprocess directly
+    start = time.time()
+
+    print("OCR: original image size:",
+          image.shape[1],
+          "x",
+          image.shape[0])
+
     processed = preprocess_image(image)
+
+    print("OCR: processed image size:",
+          processed.shape[1],
+          "x",
+          processed.shape[0])
+
+    print("OCR: starting Tesseract...")
 
     try:
 
@@ -213,12 +232,23 @@ def extract_text_from_image(image):
 
     except RuntimeError as e:
 
+        print(
+            "OCR: Tesseract failed after",
+            round(time.time() - start, 2),
+            "seconds"
+        )
+
         raise RuntimeError(
             f"Tesseract OCR timed out or failed: {str(e)}"
         )
 
-    return text.strip()
+    print(
+        "OCR: completed in",
+        round(time.time() - start, 2),
+        "seconds"
+    )
 
+    return text.strip()
 # ============================================================
 # PROCESS IMAGE
 # ============================================================
