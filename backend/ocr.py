@@ -1,4 +1,6 @@
 import os
+import time
+
 import cv2
 import numpy as np
 import pytesseract
@@ -10,7 +12,6 @@ import fitz
 # ============================================================
 
 if os.name == "nt":
-
     # Windows
     TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
@@ -18,7 +19,6 @@ if os.name == "nt":
         pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
 else:
-
     # Render / Linux
     pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
@@ -28,10 +28,11 @@ else:
 # ============================================================
 
 def preprocess_image(image):
-    
+
     if image is None:
         raise ValueError("Invalid image.")
 
+    # Convert to grayscale
     gray = cv2.cvtColor(
         image,
         cv2.COLOR_BGR2GRAY
@@ -39,7 +40,10 @@ def preprocess_image(image):
 
     height, width = gray.shape
 
-    # Reduce large phone images
+    # --------------------------------------------------------
+    # Resize large images
+    # --------------------------------------------------------
+
     target_width = 1000
 
     if width > target_width:
@@ -53,38 +57,6 @@ def preprocess_image(image):
             fy=scale,
             interpolation=cv2.INTER_AREA
         )
-
-    return gray
-
-    # Mild contrast enhancement
-    clahe = cv2.createCLAHE(
-        clipLimit=2.0,
-        tileGridSize=(8, 8)
-    )
-
-    enhanced = clahe.apply(gray)
-
-    return enhanced
-
-    # --------------------------------------------------------
-    # Resize only when necessary
-    # --------------------------------------------------------
-
-    if width != target_width:
-    
-       scale = target_width / width
-
-    gray = cv2.resize(
-        gray,
-        None,
-        fx=scale,
-        fy=scale,
-        interpolation=(
-            cv2.INTER_AREA
-            if width > target_width
-            else cv2.INTER_CUBIC
-        )
-    )
 
     # --------------------------------------------------------
     # Mild contrast enhancement
@@ -114,7 +86,6 @@ def deskew_image(image):
         cv2.COLOR_BGR2GRAY
     )
 
-    # Small processing only for angle detection
     _, binary = cv2.threshold(
         gray,
         0,
@@ -165,7 +136,8 @@ def deskew_image(image):
 
     return rotated
 
-    # ============================================================
+
+# ============================================================
 # OCR QUALITY SCORE
 # ============================================================
 
@@ -199,7 +171,6 @@ def ocr_score(text):
 # ============================================================
 # OCR IMAGE
 # ============================================================
-import time
 
 def extract_text_from_image(image):
 
@@ -208,17 +179,25 @@ def extract_text_from_image(image):
 
     start = time.time()
 
-    print("OCR: original image size:",
-          image.shape[1],
-          "x",
-          image.shape[0])
+    print(
+        "OCR: original image size:",
+        image.shape[1],
+        "x",
+        image.shape[0]
+    )
 
+    # Deskew
+    image = deskew_image(image)
+
+    # Preprocess
     processed = preprocess_image(image)
 
-    print("OCR: processed image size:",
-          processed.shape[1],
-          "x",
-          processed.shape[0])
+    print(
+        "OCR: processed image size:",
+        processed.shape[1],
+        "x",
+        processed.shape[0]
+    )
 
     print("OCR: starting Tesseract...")
 
@@ -227,7 +206,7 @@ def extract_text_from_image(image):
         text = pytesseract.image_to_string(
             processed,
             config="--oem 3 --psm 6",
-            timeout=60
+            timeout=30
         )
 
     except RuntimeError as e:
@@ -249,6 +228,8 @@ def extract_text_from_image(image):
     )
 
     return text.strip()
+
+
 # ============================================================
 # PROCESS IMAGE
 # ============================================================
@@ -292,10 +273,7 @@ def process_pdf(file_path):
                 page_number
             ]
 
-            # ------------------------------------------------
-            # Render PDF at moderate resolution
-            # ------------------------------------------------
-
+            # Moderate PDF resolution
             pixmap = page.get_pixmap(
                 matrix=fitz.Matrix(2, 2),
                 alpha=False
